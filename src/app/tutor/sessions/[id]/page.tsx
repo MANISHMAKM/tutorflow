@@ -11,7 +11,7 @@ import { AIPlanModal } from '@/components/AIPlanModal';
 import { AIDebriefCard } from '@/components/AIDebriefCard';
 import { AIProgressModal } from '@/components/AIProgressModal';
 import { Session, SessionStatus, Debrief, SessionPlan, StudentProfile, UserProfile } from '@/types';
-import { MOCK_SESSIONS, MOCK_STUDENT, MOCK_NOTES, MOCK_PLANS, MOCK_DEBRIEFS } from '@/lib/store';
+import { MOCK_SESSIONS, MOCK_STUDENT, MOCK_STUDENTS_LIST, MOCK_NOTES, MOCK_PLANS, MOCK_DEBRIEFS } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Clock, User, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -89,16 +89,31 @@ export default function SessionWorkspacePage() {
 
           if (!sessionErr && sessionData) {
             activeSession = sessionData as Session;
-            activeStudent = (sessionData.student as unknown as StudentProfile) || null;
+            if (sessionData.student && typeof sessionData.student === 'object' && 'name' in sessionData.student) {
+              activeStudent = sessionData.student as unknown as StudentProfile;
+            } else if (sessionData.student_id) {
+              const { data: studentDb } = await supabase
+                .from('students')
+                .select('*')
+                .eq('id', sessionData.student_id)
+                .single();
+              if (studentDb) activeStudent = studentDb as StudentProfile;
+            }
           }
-        } catch (err) {}
+        } catch (err) {
+          console.warn('Supabase session fetch error in workspace:', err);
+        }
 
         if (!activeSession) {
           const mockS = MOCK_SESSIONS.find(s => s.id === sessionId);
           if (mockS) {
             activeSession = mockS;
-            activeStudent = mockS.student || MOCK_STUDENT;
+            activeStudent = mockS.student || MOCK_STUDENTS_LIST.find(s => s.id === mockS.student_id) || MOCK_STUDENT;
           }
+        }
+
+        if (activeSession && !activeStudent) {
+          activeStudent = MOCK_STUDENTS_LIST.find(s => s.id === activeSession.student_id) || MOCK_STUDENT;
         }
 
         if (!activeSession || !activeStudent) {
