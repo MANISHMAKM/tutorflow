@@ -57,6 +57,7 @@ export default function SessionWorkspacePage() {
         }
 
         const activeEmail = currentAuthUser?.email || decodedEmail || 'tutor@tutorflow.com';
+        const currentTutorId = currentAuthUser?.id || (activeEmail === 'david@tutorflow.com' ? 'tutor-2' : 'tutor-1');
 
         if (currentAuthUser) {
           try {
@@ -69,7 +70,7 @@ export default function SessionWorkspacePage() {
           } catch (e) {}
         } else {
           setTutorUser({
-            id: activeEmail === 'david@tutorflow.com' ? 'tutor-2' : 'tutor-1',
+            id: currentTutorId,
             email: activeEmail,
             name: activeEmail === 'david@tutorflow.com' ? 'Prof. David Vance' : 'Dr. Sarah Jenkins',
             role: 'tutor',
@@ -116,8 +117,19 @@ export default function SessionWorkspacePage() {
           activeStudent = MOCK_STUDENTS_LIST.find(s => s.id === activeSession.student_id) || MOCK_STUDENT;
         }
 
+        // STRICT CROSS-TUTOR ISOLATION CHECK
+        if (activeSession && currentTutorId) {
+          if (activeSession.tutor_id !== currentTutorId) {
+            setApiError('Access denied: You can only view sessions assigned to your tutor account.');
+            setSession(null);
+            setStudent(null);
+            setLoading(false);
+            return;
+          }
+        }
+
         if (!activeSession || !activeStudent) {
-          setApiError('Session not found or access denied.');
+          setApiError('Access denied or session not found.');
           setLoading(false);
           return;
         }

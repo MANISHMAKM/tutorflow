@@ -142,3 +142,13 @@ With one additional day, I would first integrate real-time collaborative whitebo
    ```bash
    npm run dev
    ```
+
+---
+
+## 📝 9. Tutor Workspace Audit & Fixes (Changelog)
+
+- **Strict Cross-Tutor Isolation**: Added explicit tutor ID resolution and ownership comparison (`activeSession.tutor_id === currentTutorId`) in [`src/app/tutor/sessions/[id]/page.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/app/tutor/sessions/[id]/page.tsx). Manually changing the session URL to another tutor's session ID (e.g., Tutor 1 opening Tutor 2's session) returns **`Access Denied: You can only view sessions assigned to your tutor account`**, blocking unauthorized access.
+- **Full Lifecycle Stepper**: Verified linear state machine progression (`scheduled → in_progress → completed → ai_reviewed`). Invalid transition attempts (e.g. `scheduled → ai_reviewed`) return an explicit **`HTTP 409 Conflict`** error banner.
+- **Debounced Notes & Read-Only Lock**: Confirmed 1.5s debounced PATCH autosave during `in_progress`. Upon transitioning to `completed`, notes lock into read-only mode and are preserved across page reloads.
+- **AI Pre-Session Plan & Post-Session Debrief**: Verified structured JSON generation (3 objectives, 4-point outline, 3 practice questions with solutions). Post-session debrief auto-inserts student homework items and advances session status to `ai_reviewed` upon DB persistence.
+
