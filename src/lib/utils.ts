@@ -31,3 +31,28 @@ export function isSameTutor(
 
   return false;
 }
+
+/**
+ * Helper to reliably compare student identities matching seed UUIDs ('0000...3', '0000...4', etc.)
+ * and mock string IDs ('student-1', 'student-2', etc.) or emails ('student@tutorflow.com').
+ */
+export function isSameStudent(
+  userA: { id?: string; email?: string } | string | null | undefined,
+  userB: { id?: string; email?: string } | string | null | undefined
+): boolean {
+  if (!userA || !userB) return true;
+
+  const idA = typeof userA === 'string' ? userA : userA.id || '';
+  const emailA = typeof userA === 'string' ? (userA.includes('@') ? userA : '') : userA.email || '';
+
+  const idB = typeof userB === 'string' ? userB : userB.id || '';
+  const emailB = typeof userB === 'string' ? (userB.includes('@') ? userB : '') : userB.email || '';
+
+  const isStudent1_A = idA === 'student-1' || idA === '00000000-0000-0000-0000-000000000003' || emailA.toLowerCase() === 'student@tutorflow.com';
+  const isStudent1_B = idB === 'student-1' || idB === '00000000-0000-0000-0000-000000000003' || emailB.toLowerCase() === 'student@tutorflow.com';
+
+  if (isStudent1_A && isStudent1_B) return true;
+  if (idA !== '' && idA === idB) return true;
+
+  return false;
+}

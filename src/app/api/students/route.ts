@@ -4,12 +4,16 @@ import { requireTutor, AuthorizationError } from '@/lib/auth-guards';
 import { isSupabaseConfigured } from '@/lib/auth-helper';
 import { MOCK_STUDENTS_LIST } from '@/lib/store';
 
+import { isSameTutor } from '@/lib/utils';
+
 export async function GET() {
   try {
     const tutor = await requireTutor();
 
+    console.log(`[AUTH LOG] GET /api/students for tutor: id=${tutor.id}, email=${tutor.email}`);
+
     if (!isSupabaseConfigured()) {
-      const fallback = MOCK_STUDENTS_LIST.filter(s => s.tutor_id === tutor.id);
+      const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id));
       return NextResponse.json({ students: fallback });
     }
 
@@ -24,11 +28,14 @@ export async function GET() {
       if (!error && students && students.length > 0) {
         return NextResponse.json({ students });
       }
+      if (error) {
+        console.warn(`[DB WARNING] Supabase students query error: ${error.message}`);
+      }
     } catch (dbErr) {
       console.warn('Supabase students query caught error, returning seed fallback:', dbErr);
     }
 
-    const fallback = MOCK_STUDENTS_LIST.filter(s => s.tutor_id === tutor.id);
+    const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id));
     return NextResponse.json({ students: fallback });
   } catch (err: unknown) {
     if (err instanceof AuthorizationError) {

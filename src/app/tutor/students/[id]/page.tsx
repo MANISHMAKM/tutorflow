@@ -11,6 +11,7 @@ import { StudentProfile, Session, UserProfile } from '@/types';
 import { MOCK_STUDENTS_LIST, MOCK_SESSIONS } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Target, Award, Calendar, Clock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { isSameStudent, isSameTutor } from '@/lib/utils';
 
 export default function StudentDetailPage() {
   const params = useParams();
@@ -76,12 +77,22 @@ export default function StudentDetailPage() {
         let activeStudent: StudentProfile | null = studentData as StudentProfile | null;
 
         if (studentErr || !studentData) {
-          const mockSt = MOCK_STUDENTS_LIST.find(s => s.id === studentId);
+          console.warn(`[STUDENT DETAIL FETCH LOG] Supabase query for student ${studentId} error: ${studentErr?.message}. Checking seed store.`);
+          const mockSt = MOCK_STUDENTS_LIST.find(s => isSameStudent(studentId, s.id) || s.id === studentId);
           if (mockSt) activeStudent = mockSt;
         }
 
         if (!activeStudent) {
           setErrorMessage('Student profile not found or access denied.');
+          setLoading(false);
+          return;
+        }
+
+        // Verify tutor ownership of this student
+        const currentTutorRef = currentAuthUser?.id ? { id: currentAuthUser.id, email: activeEmail } : { email: activeEmail };
+        if (!isSameTutor(currentTutorRef, activeStudent.tutor_id)) {
+          setErrorMessage('Access denied: You can only view students assigned to your tutor account.');
+          setStudent(null);
           setLoading(false);
           return;
         }

@@ -5,16 +5,20 @@ import { sendSessionScheduledEmail } from '@/lib/email/service';
 import { isSupabaseConfigured } from '@/lib/auth-helper';
 import { MOCK_SESSIONS } from '@/lib/store';
 
+import { isSameTutor, isSameStudent } from '@/lib/utils';
+
 export async function GET() {
   try {
     const authUser = await requireAuth();
 
+    console.log(`[AUTH LOG] GET /api/sessions for authUser: id=${authUser.id}, email=${authUser.email}, role=${authUser.role}`);
+
     if (!isSupabaseConfigured()) {
       let fallback = MOCK_SESSIONS;
       if (authUser.role === 'student') {
-        fallback = fallback.filter(s => s.student_id === authUser.id);
+        fallback = fallback.filter(s => isSameStudent(authUser, s.student_id));
       } else if (authUser.role === 'tutor') {
-        fallback = fallback.filter(s => s.tutor_id === authUser.id);
+        fallback = fallback.filter(s => isSameTutor(authUser, s.tutor_id));
       }
       return NextResponse.json({ sessions: fallback });
     }
@@ -37,15 +41,18 @@ export async function GET() {
       if (!error && sessions && sessions.length > 0) {
         return NextResponse.json({ sessions });
       }
+      if (error) {
+        console.warn(`[DB WARNING] Supabase sessions query returned error: ${error.message}`);
+      }
     } catch (dbErr) {
       console.warn('Supabase sessions query caught error, returning seed fallback:', dbErr);
     }
 
     let fallback = MOCK_SESSIONS;
     if (authUser.role === 'student') {
-      fallback = fallback.filter(s => s.student_id === authUser.id);
+      fallback = fallback.filter(s => isSameStudent(authUser, s.student_id));
     } else if (authUser.role === 'tutor') {
-      fallback = fallback.filter(s => s.tutor_id === authUser.id);
+      fallback = fallback.filter(s => isSameTutor(authUser, s.tutor_id));
     }
     return NextResponse.json({ sessions: fallback });
   } catch (err: unknown) {

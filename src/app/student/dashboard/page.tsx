@@ -8,6 +8,8 @@ import { AIProgressModal } from '@/components/AIProgressModal';
 import { Session, StudentHomeworkItem, StudentProfile, SessionNotes, Debrief, UserProfile } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar, CheckSquare, BookOpen, Clock, Lock, Sparkles, Award, Loader2 } from 'lucide-react';
+import { isSameStudent } from '@/lib/utils';
+import { MOCK_STUDENTS_LIST } from '@/lib/store';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function StudentDashboardPage() {
   const [notesMap, setNotesMap] = useState<Record<string, SessionNotes>>({});
   const [debriefsMap, setDebriefsMap] = useState<Record<string, Debrief>>({});
   const [loading, setLoading] = useState(true);
+  const [savingHomeworkId, setSavingHomeworkId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadStudentData() {
@@ -38,6 +41,7 @@ export default function StudentDashboardPage() {
         const { data: { user: authUser } } = await supabase.auth.getUser();
 
         if (authUser) {
+          console.log(`[AUTH LOG] Student dashboard loaded for authUser: id=${authUser.id}, email=${authUser.email}`);
           const { data: userRecord } = await supabase
             .from('users')
             .select('*')
@@ -46,13 +50,19 @@ export default function StudentDashboardPage() {
 
           if (userRecord) setStudentUser(userRecord as UserProfile);
 
-          const { data: profileRecord } = await supabase
+          const { data: profileRecord, error: profileErr } = await supabase
             .from('students')
             .select('*')
             .eq('id', authUser.id)
             .single();
 
-          if (profileRecord) setStudentProfile(profileRecord as StudentProfile);
+          if (profileRecord) {
+            setStudentProfile(profileRecord as StudentProfile);
+          } else {
+            console.warn(`[STUDENT PROFILE FETCH LOG] Supabase profile query error: ${profileErr?.message}. Falling back to seed store.`);
+            const mockSt = MOCK_STUDENTS_LIST.find(s => isSameStudent(authUser, s.id));
+            if (mockSt) setStudentProfile(mockSt);
+          }
 
           const { data: homeworkData } = await supabase
             .from('student_homework')
@@ -132,8 +142,6 @@ export default function StudentDashboardPage() {
 
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled' || s.status === 'in_progress');
   const pastSessions = sessions.filter(s => s.status === 'completed' || s.status === 'ai_reviewed');
-
-  const [savingHomeworkId, setSavingHomeworkId] = useState<string | null>(null);
 
   const toggleHomework = async (id: string) => {
     const target = homework.find(h => h.id === id);

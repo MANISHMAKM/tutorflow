@@ -46,7 +46,7 @@ export async function requireStudent(): Promise<UserProfile> {
   return user;
 }
 
-import { isSameTutor } from '@/lib/utils';
+import { isSameTutor, isSameStudent } from '@/lib/utils';
 
 /**
  * Verifies authenticated tutor owns the requested student record (403/404).
@@ -72,7 +72,7 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
     if (err instanceof AuthorizationError) throw err;
   }
 
-  const mockStudent = MOCK_STUDENTS_LIST.find(s => s.id === studentId);
+  const mockStudent = MOCK_STUDENTS_LIST.find(s => isSameStudent(studentId, s.id) || s.id === studentId);
   if (mockStudent) {
     if (!isSameTutor(tutor, mockStudent.tutor_id)) {
       throw new AuthorizationError('Forbidden: You can only access students assigned to your account', 403);
@@ -133,7 +133,7 @@ export async function requireStudentOwnsSession(sessionId: string): Promise<User
       .single();
 
     if (!error && session) {
-      if (session.student_id !== student.id) {
+      if (!isSameStudent(student, session.student_id)) {
         throw new AuthorizationError('Forbidden: You can only view your own session records', 403);
       }
       return student;
@@ -144,7 +144,7 @@ export async function requireStudentOwnsSession(sessionId: string): Promise<User
 
   const mockSession = MOCK_SESSIONS.find(s => s.id === sessionId);
   if (mockSession) {
-    if (mockSession.student_id !== student.id) {
+    if (!isSameStudent(student, mockSession.student_id)) {
       throw new AuthorizationError('Forbidden: You can only view your own session records', 403);
     }
     return student;
@@ -168,7 +168,7 @@ export async function requireStudentOwnsHomework(homeworkId: string): Promise<Us
       .single();
 
     if (!error && homework) {
-      if (homework.student_id !== student.id) {
+      if (!isSameStudent(student, homework.student_id)) {
         throw new AuthorizationError('Forbidden: You can only update homework assigned to your account', 403);
       }
       return student;
@@ -179,7 +179,7 @@ export async function requireStudentOwnsHomework(homeworkId: string): Promise<Us
 
   const mockHw = MOCK_HOMEWORK.find(h => h.id === homeworkId);
   if (mockHw) {
-    if (mockHw.student_id !== student.id) {
+    if (!isSameStudent(student, mockHw.student_id)) {
       throw new AuthorizationError('Forbidden: You can only update homework assigned to your account', 403);
     }
     return student;
