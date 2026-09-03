@@ -10,6 +10,7 @@ import { NotesEditor } from '@/components/NotesEditor';
 import { AIPlanModal } from '@/components/AIPlanModal';
 import { AIDebriefCard } from '@/components/AIDebriefCard';
 import { AIProgressModal } from '@/components/AIProgressModal';
+import { isSameTutor } from '@/lib/utils';
 import { Session, SessionStatus, Debrief, SessionPlan, StudentProfile, UserProfile } from '@/types';
 import { MOCK_SESSIONS, MOCK_STUDENT, MOCK_STUDENTS_LIST, MOCK_NOTES, MOCK_PLANS, MOCK_DEBRIEFS } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
@@ -118,8 +119,9 @@ export default function SessionWorkspacePage() {
         }
 
         // STRICT CROSS-TUTOR ISOLATION CHECK
-        if (activeSession && currentTutorId) {
-          if (activeSession.tutor_id !== currentTutorId) {
+        if (activeSession) {
+          const currentTutorRef = { id: currentAuthUser?.id, email: activeEmail };
+          if (!isSameTutor(currentTutorRef, activeSession.tutor_id)) {
             setApiError('Access denied: You can only view sessions assigned to your tutor account.');
             setSession(null);
             setStudent(null);

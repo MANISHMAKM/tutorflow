@@ -46,6 +46,8 @@ export async function requireStudent(): Promise<UserProfile> {
   return user;
 }
 
+import { isSameTutor } from '@/lib/utils';
+
 /**
  * Verifies authenticated tutor owns the requested student record (403/404).
  */
@@ -61,7 +63,7 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
       .single();
 
     if (!error && student) {
-      if (student.tutor_id !== tutor.id) {
+      if (!isSameTutor(tutor, student.tutor_id)) {
         throw new AuthorizationError('Forbidden: You can only access students assigned to your account', 403);
       }
       return tutor;
@@ -72,7 +74,7 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
 
   const mockStudent = MOCK_STUDENTS_LIST.find(s => s.id === studentId);
   if (mockStudent) {
-    if (mockStudent.tutor_id !== tutor.id) {
+    if (!isSameTutor(tutor, mockStudent.tutor_id)) {
       throw new AuthorizationError('Forbidden: You can only access students assigned to your account', 403);
     }
     return tutor;
@@ -96,7 +98,7 @@ export async function requireTutorOwnsSession(sessionId: string): Promise<UserPr
       .single();
 
     if (!error && session) {
-      if (session.tutor_id !== tutor.id) {
+      if (!isSameTutor(tutor, session.tutor_id)) {
         throw new AuthorizationError('Forbidden: You can only manage sessions assigned to your account', 403);
       }
       return tutor;
@@ -107,7 +109,7 @@ export async function requireTutorOwnsSession(sessionId: string): Promise<UserPr
 
   const mockSession = MOCK_SESSIONS.find(s => s.id === sessionId);
   if (mockSession) {
-    if (mockSession.tutor_id !== tutor.id) {
+    if (!isSameTutor(tutor, mockSession.tutor_id)) {
       throw new AuthorizationError('Forbidden: You can only manage sessions assigned to your account', 403);
     }
     return tutor;
