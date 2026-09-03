@@ -35,11 +35,11 @@ export const ProgressSummarySchema = z.object({
   recommended_strategy: z.string(),
 });
 
-// Helper to get initialized OpenAI client if key is set
-function getOpenAIClient(): OpenAI | null {
+// Helper to get initialized OpenAI client
+function getOpenAIClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || apiKey.startsWith('dummy') || apiKey.includes('your-openai')) {
-    return null;
+    throw new Error('OpenAI API key is missing or unconfigured. Please set OPENAI_API_KEY in environment variables.');
   }
   return new OpenAI({ apiKey });
 }
@@ -66,27 +66,6 @@ export async function generatePreSessionPlan(
   pastDebriefs: Debrief[] = []
 ): Promise<Omit<SessionPlan, 'session_id'>> {
   const openai = getOpenAIClient();
-  if (!openai) {
-    const primaryWeakness = student.weak_areas?.[0] || 'core weak areas';
-    return {
-      objectives: [
-        `Master foundational mechanics for ${topic}`,
-        `Apply systematic problem-solving strategies to ${primaryWeakness}`,
-        `Build speed and precision on exam-style practice questions`,
-      ],
-      lesson_outline: [
-        `1. Warm-Up & Diagnostic (10 min): Review foundational concepts and homework from last session`,
-        `2. Concept Breakdown & Modeling (20 min): Interactive walkthrough of ${topic}`,
-        `3. Guided Practice (20 min): Solve targeted practice problems focusing on ${primaryWeakness}`,
-        `4. Exit Challenge & Wrap-Up (10 min): Independent problem solving and key takeaways summary`,
-      ],
-      practice_questions: [
-        `Problem 1: Solve the primary equation for ${topic} under standard conditions. (Solution: Apply formula step 1 and solve for variable)`,
-        `Problem 2: Analyze the edge case scenario in ${topic} when parameters approach boundary limits. (Solution: Substitute given boundary values and simplify)`,
-        `Problem 3: Multi-step word problem applying ${topic} to practical application. (Solution: Break into sub-problems A and B, then combine final outputs)`,
-      ],
-    };
-  }
 
   const historyContext = pastDebriefs.length > 0
     ? pastDebriefs.slice(0, 3).map((d, i) => `Session ${i + 1} Summary: ${d.summary} | Next Focus: ${d.next_focus}`).join('\n')
@@ -161,7 +140,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
     };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      if (err.message.includes('schema validation')) throw err;
+      if (err.message.includes('schema validation') || err.message.includes('unconfigured')) throw err;
       if (err.message.includes('429') || err.message.toLowerCase().includes('rate limit')) {
         throw new Error('OpenAI Rate Limit Exceeded: Please wait a moment before trying again.');
       }
@@ -185,27 +164,6 @@ export async function generatePostSessionDebrief(
   rawNotes: string
 ): Promise<Omit<Debrief, 'session_id'>> {
   const openai = getOpenAIClient();
-  if (!openai) {
-    const primaryWeakness = student.weak_areas?.[0] || 'target focus area';
-    const summaryText = rawNotes && rawNotes.trim().length > 10
-      ? `In this session on "${topic}", the student worked through key concepts. Tutor notes summary: ${rawNotes.slice(0, 150)}.`
-      : `Solid session covering "${topic}". ${student.name} demonstrated good retention of core principles and actively engaged during guided practice.`;
-
-    return {
-      summary: summaryText,
-      homework: [
-        {
-          task: `${topic} Practice Problems`,
-          description: `Complete exercises 1-5 focusing on ${primaryWeakness}.`,
-        },
-        {
-          task: `Concept Review & Self-Quiz`,
-          description: `Review key formulas and sketch summary notes for next session preparation.`,
-        },
-      ],
-      next_focus: `Deepen problem-solving fluency on ${primaryWeakness}.`,
-    };
-  }
 
   const prompt = `You are an AI pedagogical assistant generating a post-session debrief for a tutoring session.
 
@@ -260,7 +218,7 @@ Return ONLY a valid JSON object with the exact format:
     };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      if (err.message.includes('schema validation')) throw err;
+      if (err.message.includes('schema validation') || err.message.includes('unconfigured')) throw err;
       if (err.message.includes('429') || err.message.toLowerCase().includes('rate limit')) {
         throw new Error('OpenAI Rate Limit Exceeded: Please wait a moment before trying again.');
       }
@@ -283,20 +241,6 @@ export async function generateStudentProgressSummary(
   pastDebriefs: Debrief[]
 ): Promise<ProgressSummaryResult> {
   const openai = getOpenAIClient();
-  if (!openai) {
-    return {
-      summary: `${student.name} has demonstrated steady learning momentum in ${student.subject} across recent sessions. Performance shows growing confidence in core problem-solving routines with consistent effort on assigned practice.`,
-      key_improvements: [
-        `Improved accuracy on baseline mechanics and conceptual understanding`,
-        `Better speed when approaching multi-step problem setups`,
-      ],
-      persistent_weaknesses: [
-        student.weak_areas?.[0] || 'Time management under strict exam conditions',
-        student.weak_areas?.[1] || 'Algebraic simplification in complex multi-part problems',
-      ],
-      recommended_strategy: `Continue combining 15-minute diagnostic warm-ups with timed independent problem sets during upcoming sessions.`,
-    };
-  }
 
   const debriefsContext = pastDebriefs.length > 0
     ? pastDebriefs.map((d, i) => `Session ${i + 1} (${d.created_at || 'Date N/A'}):\nSummary: ${d.summary}\nNext Focus: ${d.next_focus}`).join('\n\n')
@@ -347,7 +291,7 @@ Return ONLY a valid JSON object with the format:
     return parsed.data;
   } catch (err: unknown) {
     if (err instanceof Error) {
-      if (err.message.includes('schema validation')) throw err;
+      if (err.message.includes('schema validation') || err.message.includes('unconfigured')) throw err;
       if (err.message.includes('429') || err.message.toLowerCase().includes('rate limit')) {
         throw new Error('OpenAI Rate Limit Exceeded: Please wait a moment before trying again.');
       }
@@ -359,5 +303,6 @@ Return ONLY a valid JSON object with the format:
     throw new Error('AI Student Progress Summary generation failed due to an unexpected error.');
   }
 }
+
 
 

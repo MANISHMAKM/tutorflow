@@ -45,18 +45,18 @@ export async function getAuthUser(): Promise<UserProfile | null> {
     }
   }
 
-  // Fallback check for seed session cookies when Supabase is in placeholder/offline mode
+  // Check for seed session cookies when demo_user_email is set
   try {
     const cookieStore = await cookies();
     const demoEmail = cookieStore.get('demo_user_email')?.value;
     if (demoEmail === 'david@tutorflow.com') return MOCK_TUTOR_2;
     if (demoEmail === 'student@tutorflow.com') return MOCK_STUDENT_USER;
-    if (demoEmail === 'tutor@tutorflow.com' || demoEmail) return MOCK_TUTOR;
+    if (demoEmail === 'tutor@tutorflow.com') return MOCK_TUTOR;
   } catch (cookieErr) {
     console.warn('Error reading demo session cookies:', cookieErr);
   }
 
-  return MOCK_TUTOR;
+  return null;
 }
 
 
