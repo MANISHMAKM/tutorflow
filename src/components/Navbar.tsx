@@ -24,7 +24,9 @@ export function Navbar({ currentRole = 'tutor', userName = 'User' }: Props) {
     } catch (err) {
       console.warn('Sign out warning:', err);
     } finally {
-      router.push('/login');
+      document.cookie = 'demo_user_email=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'demo_user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      window.location.href = '/login';
     }
   };
 
@@ -86,7 +88,7 @@ export function Navbar({ currentRole = 'tutor', userName = 'User' }: Props) {
 
         {/* User Profile & Sign Out */}
         <div className="flex items-center space-x-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {initials}
             </div>
@@ -96,9 +98,10 @@ export function Navbar({ currentRole = 'tutor', userName = 'User' }: Props) {
             <button
               onClick={handleLogout}
               title="Sign Out"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-500/40 transition-all flex items-center gap-1.5"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </div>
