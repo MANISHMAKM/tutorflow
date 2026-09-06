@@ -63,6 +63,9 @@ export default function LoginPage() {
 
       const userRole = profile?.role || (data.user.user_metadata?.role as 'tutor' | 'student') || role;
 
+      document.cookie = `demo_user_email=${encodeURIComponent(email)}; path=/; max-age=86400`;
+      document.cookie = `demo_user_role=${encodeURIComponent(userRole)}; path=/; max-age=86400`;
+
       if (userRole === 'tutor') {
         router.push('/tutor/dashboard');
       } else {
