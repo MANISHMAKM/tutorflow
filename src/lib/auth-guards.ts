@@ -19,8 +19,10 @@ export class AuthorizationError extends Error {
 export async function requireAuth(): Promise<UserProfile> {
   const user = await getAuthUser();
   if (!user) {
+    console.warn('[AUTH GUARD LOG] requireAuth failed: User unauthenticated');
     throw new AuthorizationError('Unauthorized: Authentication required', 401);
   }
+  console.log(`[AUTH GUARD LOG] requireAuth success: userId=${user.id}, email=${user.email}, role=${user.role}`);
   return user;
 }
 
@@ -30,6 +32,7 @@ export async function requireAuth(): Promise<UserProfile> {
 export async function requireTutor(): Promise<UserProfile> {
   const user = await requireAuth();
   if (user.role !== 'tutor') {
+    console.warn(`[AUTH GUARD LOG] requireTutor failed: userId=${user.id}, role=${user.role}`);
     throw new AuthorizationError('Forbidden: Tutor access required', 403);
   }
   return user;
@@ -41,6 +44,7 @@ export async function requireTutor(): Promise<UserProfile> {
 export async function requireStudent(): Promise<UserProfile> {
   const user = await requireAuth();
   if (user.role !== 'student') {
+    console.warn(`[AUTH GUARD LOG] requireStudent failed: userId=${user.id}, role=${user.role}`);
     throw new AuthorizationError('Forbidden: Student access required', 403);
   }
   return user;
@@ -54,6 +58,8 @@ import { isSameTutor, isSameStudent } from '@/lib/utils';
 export async function requireTutorOwnsStudent(studentId: string): Promise<UserProfile> {
   const tutor = await requireTutor();
 
+  console.log(`[AUTH GUARD LOG] requireTutorOwnsStudent: checking tutorId=${tutor.id} vs targetStudentId=${studentId}`);
+
   try {
     const supabase = await createClient();
     const { data: student, error } = await supabase
@@ -64,6 +70,7 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
 
     if (!error && student) {
       if (!isSameTutor(tutor, student.tutor_id)) {
+        console.warn(`[AUTH GUARD LOG] requireTutorOwnsStudent forbidden: tutorId=${tutor.id} does not match student.tutor_id=${student.tutor_id}`);
         throw new AuthorizationError('Forbidden: You can only access students assigned to your account', 403);
       }
       return tutor;
@@ -75,6 +82,7 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
   const mockStudent = MOCK_STUDENTS_LIST.find(s => isSameStudent(studentId, s.id) || s.id === studentId);
   if (mockStudent) {
     if (!isSameTutor(tutor, mockStudent.tutor_id)) {
+      console.warn(`[AUTH GUARD LOG] requireTutorOwnsStudent (mock) forbidden: tutorId=${tutor.id} vs mockStudent.tutor_id=${mockStudent.tutor_id}`);
       throw new AuthorizationError('Forbidden: You can only access students assigned to your account', 403);
     }
     return tutor;
@@ -89,6 +97,8 @@ export async function requireTutorOwnsStudent(studentId: string): Promise<UserPr
 export async function requireTutorOwnsSession(sessionId: string): Promise<UserProfile> {
   const tutor = await requireTutor();
 
+  console.log(`[AUTH GUARD LOG] requireTutorOwnsSession: checking tutorId=${tutor.id} vs targetSessionId=${sessionId}`);
+
   try {
     const supabase = await createClient();
     const { data: session, error } = await supabase
@@ -99,6 +109,7 @@ export async function requireTutorOwnsSession(sessionId: string): Promise<UserPr
 
     if (!error && session) {
       if (!isSameTutor(tutor, session.tutor_id)) {
+        console.warn(`[AUTH GUARD LOG] requireTutorOwnsSession forbidden: tutorId=${tutor.id} does not match session.tutor_id=${session.tutor_id}`);
         throw new AuthorizationError('Forbidden: You can only manage sessions assigned to your account', 403);
       }
       return tutor;
@@ -110,6 +121,7 @@ export async function requireTutorOwnsSession(sessionId: string): Promise<UserPr
   const mockSession = MOCK_SESSIONS.find(s => s.id === sessionId);
   if (mockSession) {
     if (!isSameTutor(tutor, mockSession.tutor_id)) {
+      console.warn(`[AUTH GUARD LOG] requireTutorOwnsSession (mock) forbidden: tutorId=${tutor.id} vs mockSession.tutor_id=${mockSession.tutor_id}`);
       throw new AuthorizationError('Forbidden: You can only manage sessions assigned to your account', 403);
     }
     return tutor;
@@ -124,6 +136,8 @@ export async function requireTutorOwnsSession(sessionId: string): Promise<UserPr
 export async function requireStudentOwnsSession(sessionId: string): Promise<UserProfile> {
   const student = await requireStudent();
 
+  console.log(`[AUTH GUARD LOG] requireStudentOwnsSession: checking studentId=${student.id} vs targetSessionId=${sessionId}`);
+
   try {
     const supabase = await createClient();
     const { data: session, error } = await supabase
@@ -134,6 +148,7 @@ export async function requireStudentOwnsSession(sessionId: string): Promise<User
 
     if (!error && session) {
       if (!isSameStudent(student, session.student_id)) {
+        console.warn(`[AUTH GUARD LOG] requireStudentOwnsSession forbidden: studentId=${student.id} does not match session.student_id=${session.student_id}`);
         throw new AuthorizationError('Forbidden: You can only view your own session records', 403);
       }
       return student;
@@ -145,6 +160,7 @@ export async function requireStudentOwnsSession(sessionId: string): Promise<User
   const mockSession = MOCK_SESSIONS.find(s => s.id === sessionId);
   if (mockSession) {
     if (!isSameStudent(student, mockSession.student_id)) {
+      console.warn(`[AUTH GUARD LOG] requireStudentOwnsSession (mock) forbidden: studentId=${student.id} vs mockSession.student_id=${mockSession.student_id}`);
       throw new AuthorizationError('Forbidden: You can only view your own session records', 403);
     }
     return student;
@@ -159,6 +175,8 @@ export async function requireStudentOwnsSession(sessionId: string): Promise<User
 export async function requireStudentOwnsHomework(homeworkId: string): Promise<UserProfile> {
   const student = await requireStudent();
 
+  console.log(`[AUTH GUARD LOG] requireStudentOwnsHomework: checking studentId=${student.id} vs targetHomeworkId=${homeworkId}`);
+
   try {
     const supabase = await createClient();
     const { data: homework, error } = await supabase
@@ -169,6 +187,7 @@ export async function requireStudentOwnsHomework(homeworkId: string): Promise<Us
 
     if (!error && homework) {
       if (!isSameStudent(student, homework.student_id)) {
+        console.warn(`[AUTH GUARD LOG] requireStudentOwnsHomework forbidden: studentId=${student.id} does not match homework.student_id=${homework.student_id}`);
         throw new AuthorizationError('Forbidden: You can only update homework assigned to your account', 403);
       }
       return student;
@@ -180,6 +199,7 @@ export async function requireStudentOwnsHomework(homeworkId: string): Promise<Us
   const mockHw = MOCK_HOMEWORK.find(h => h.id === homeworkId);
   if (mockHw) {
     if (!isSameStudent(student, mockHw.student_id)) {
+      console.warn(`[AUTH GUARD LOG] requireStudentOwnsHomework (mock) forbidden: studentId=${student.id} vs mockHw.student_id=${mockHw.student_id}`);
       throw new AuthorizationError('Forbidden: You can only update homework assigned to your account', 403);
     }
     return student;

@@ -11,7 +11,7 @@ export function isSameTutor(
   userA: { id?: string; email?: string } | string | null | undefined,
   userB: { id?: string; email?: string } | string | null | undefined
 ): boolean {
-  if (!userA || !userB) return true;
+  if (!userA || !userB) return false;
 
   const idA = typeof userA === 'string' ? userA : userA.id || '';
   const emailA = typeof userA === 'string' ? (userA.includes('@') ? userA : '') : userA.email || '';
@@ -40,7 +40,7 @@ export function isSameStudent(
   userA: { id?: string; email?: string } | string | null | undefined,
   userB: { id?: string; email?: string } | string | null | undefined
 ): boolean {
-  if (!userA || !userB) return true;
+  if (!userA || !userB) return false;
 
   const idA = typeof userA === 'string' ? userA : userA.id || '';
   const emailA = typeof userA === 'string' ? (userA.includes('@') ? userA : '') : userA.email || '';

@@ -125,6 +125,7 @@ export const MOCK_SESSIONS: Session[] = [
     duration_minutes: 60,
     topic: 'Quadratic Optimization & Vertex Form Applications',
     status: 'scheduled',
+    meeting_link: 'https://meet.google.com/abc-defg-hij',
     student: MOCK_STUDENT,
   },
   {
@@ -135,6 +136,7 @@ export const MOCK_SESSIONS: Session[] = [
     duration_minutes: 60,
     topic: 'Polynomial Factoring & Synthetic Division',
     status: 'completed',
+    meeting_link: 'https://meet.google.com/abc-defg-hij',
     student: MOCK_STUDENT,
   },
   {
@@ -145,6 +147,7 @@ export const MOCK_SESSIONS: Session[] = [
     duration_minutes: 60,
     topic: 'Introduction to Kinematics & Motion Graphs',
     status: 'ai_reviewed',
+    meeting_link: 'https://meet.google.com/abc-defg-hij',
     student: MOCK_STUDENT,
   },
   {
@@ -155,6 +158,7 @@ export const MOCK_SESSIONS: Session[] = [
     duration_minutes: 60,
     topic: 'Rotational Dynamics & Moment of Inertia',
     status: 'scheduled',
+    meeting_link: 'https://meet.google.com/xyz-uvwx-rst',
     student: MOCK_STUDENT_MARIA,
   },
 ];

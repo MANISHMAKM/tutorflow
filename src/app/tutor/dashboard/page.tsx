@@ -9,7 +9,7 @@ import { NewStudentModal } from '@/components/NewStudentModal';
 import { NewSessionModal } from '@/components/NewSessionModal';
 import { StudentProfile, Session, UserProfile } from '@/types';
 import { createClient } from '@/lib/supabase/client';
-import { Users, Calendar, ArrowRight, BookOpen, Clock, Loader2 } from 'lucide-react';
+import { Users, Calendar, ArrowRight, BookOpen, Clock, Loader2, Video } from 'lucide-react';
 
 export default function TutorDashboardPage() {
   const router = useRouter();
@@ -285,6 +285,17 @@ export default function TutorDashboardPage() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {session.meeting_link && (
+                          <a
+                            href={session.meeting_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600/90 hover:bg-emerald-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            Join Call
+                          </a>
+                        )}
                         <Link
                           href={`/tutor/sessions/${session.id}`}
                           className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"

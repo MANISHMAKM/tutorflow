@@ -131,12 +131,16 @@ Return ONLY a valid JSON object with the following exact keys and structure:
 }`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-    });
+    console.log(`[AI SERVICE LOG] generatePreSessionPlan start for student=${student.name}, topic=${topic}`);
+    const response = await openai.chat.completions.create(
+      {
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      },
+      { timeout: 25000 }
+    );
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -147,7 +151,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
     const parsed = PreSessionPlanSchema.safeParse(rawParsed);
 
     if (!parsed.success) {
-      console.error('Pre-Session Plan Zod validation error:', parsed.error.format());
+      console.error('[AI SERVICE LOG] Pre-Session Plan Zod validation error:', parsed.error.format());
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
@@ -156,13 +160,15 @@ Return ONLY a valid JSON object with the following exact keys and structure:
       return `${pq.question} (Solution: ${pq.solution})`;
     });
 
+    console.log(`[AI SERVICE LOG] generatePreSessionPlan success for student=${student.name}`);
+
     return {
       objectives: parsed.data.objectives,
       lesson_outline: parsed.data.lesson_outline,
       practice_questions: formattedQuestions,
     };
   } catch (err: unknown) {
-    console.warn('OpenAI API call failed, falling back to contextual generator:', err);
+    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual generator:', err);
     const primaryWeakness = student.weak_areas?.[0] || 'core mechanics';
     const primaryGoal = student.learning_goals?.[0] || 'exam preparation';
     return {
@@ -246,12 +252,16 @@ Return ONLY a valid JSON object with the exact format:
 }`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-    });
+    console.log(`[AI SERVICE LOG] generatePostSessionDebrief start for student=${student.name}, topic=${topic}`);
+    const response = await openai.chat.completions.create(
+      {
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      },
+      { timeout: 25000 }
+    );
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -262,9 +272,11 @@ Return ONLY a valid JSON object with the exact format:
     const parsed = PostSessionDebriefSchema.safeParse(rawParsed);
 
     if (!parsed.success) {
-      console.error('Post-Session Debrief Zod validation error:', parsed.error.format());
+      console.error('[AI SERVICE LOG] Post-Session Debrief Zod validation error:', parsed.error.format());
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
+
+    console.log(`[AI SERVICE LOG] generatePostSessionDebrief success for student=${student.name}`);
 
     return {
       summary: parsed.data.summary,
@@ -272,7 +284,7 @@ Return ONLY a valid JSON object with the exact format:
       next_focus: parsed.data.next_focus,
     };
   } catch (err: unknown) {
-    console.warn('OpenAI API call failed, falling back to contextual debrief generator:', err);
+    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual debrief generator:', err);
     const primaryWeakness = student.weak_areas?.[0] || 'target focus topic';
     const summaryText = rawNotes && rawNotes.trim().length > 10
       ? `In this session on "${topic}", ${student.name} covered key problem-solving techniques. Tutor session notes: ${rawNotes.slice(0, 160)}.`
@@ -347,12 +359,16 @@ Return ONLY a valid JSON object with the format:
 }`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-    });
+    console.log(`[AI SERVICE LOG] generateStudentProgressSummary start for student=${student.name}`);
+    const response = await openai.chat.completions.create(
+      {
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      },
+      { timeout: 25000 }
+    );
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -363,13 +379,15 @@ Return ONLY a valid JSON object with the format:
     const parsed = ProgressSummarySchema.safeParse(rawParsed);
 
     if (!parsed.success) {
-      console.error('Progress Summary Zod validation error:', parsed.error.format());
+      console.error('[AI SERVICE LOG] Progress Summary Zod validation error:', parsed.error.format());
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
+    console.log(`[AI SERVICE LOG] generateStudentProgressSummary success for student=${student.name}`);
+
     return parsed.data;
   } catch (err: unknown) {
-    console.warn('OpenAI API call failed, falling back to contextual progress generator:', err);
+    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual progress generator:', err);
     return {
       summary: `${student.name} has demonstrated steady learning velocity in ${student.subject} across recent sessions. Performance reflects growing problem-solving confidence with consistent effort on assigned homework tasks.`,
       key_improvements: [

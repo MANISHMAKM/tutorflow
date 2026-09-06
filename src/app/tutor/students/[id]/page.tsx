@@ -207,7 +207,7 @@ export default function StudentDetailPage() {
               Learning Goals
             </h3>
             <ul className="space-y-1.5 text-xs text-slate-300">
-              {(student.learning_goals || []).map((goal, i) => (
+              {(student.learning_goals && student.learning_goals.length > 0 ? student.learning_goals : ['Not set']).map((goal, i) => (
                 <li key={i} className="flex items-center gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                   {goal}
@@ -222,7 +222,7 @@ export default function StudentDetailPage() {
               Target Weak Areas
             </h3>
             <ul className="space-y-1.5 text-xs text-slate-300">
-              {(student.weak_areas || []).map((wa, i) => (
+              {(student.weak_areas && student.weak_areas.length > 0 ? student.weak_areas : ['Not set']).map((wa, i) => (
                 <li key={i} className="flex items-center gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                   {wa}

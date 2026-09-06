@@ -22,7 +22,7 @@ export async function getAuthUser(): Promise<UserProfile | null> {
       const { data: { user }, error } = await supabase.auth.getUser();
 
       if (!error && user) {
-        // Fetch user profile from public.users table
+        // Fetch user profile from public.users table by id
         const { data: profile } = await supabase
           .from('users')
           .select('*')
@@ -33,11 +33,26 @@ export async function getAuthUser(): Promise<UserProfile | null> {
           return profile as UserProfile;
         }
 
+        // Fallback: Fetch user profile from public.users table by email
+        if (user.email) {
+          const { data: profileByEmail } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', user.email.toLowerCase())
+            .single();
+
+          if (profileByEmail) {
+            return profileByEmail as UserProfile;
+          }
+        }
+
+        const resolvedRole = (user.user_metadata?.role as 'tutor' | 'student') || (user.email?.toLowerCase().includes('student') ? 'student' : 'tutor');
+
         return {
           id: user.id,
           email: user.email || '',
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          role: (user.user_metadata?.role as 'tutor' | 'student') || 'tutor',
+          role: resolvedRole,
         };
       }
     } catch (err) {

@@ -30,6 +30,7 @@ export interface Session {
   duration_minutes: number;
   topic: string;
   status: SessionStatus;
+  meeting_link?: string;
   created_at?: string;
   student?: StudentProfile;
   tutor?: UserProfile;

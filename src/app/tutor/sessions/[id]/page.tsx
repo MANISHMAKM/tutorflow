@@ -10,11 +10,11 @@ import { NotesEditor } from '@/components/NotesEditor';
 import { AIPlanModal } from '@/components/AIPlanModal';
 import { AIDebriefCard } from '@/components/AIDebriefCard';
 import { AIProgressModal } from '@/components/AIProgressModal';
-import { isSameTutor } from '@/lib/utils';
+import { isSameTutor, isSameStudent } from '@/lib/utils';
 import { Session, SessionStatus, Debrief, SessionPlan, StudentProfile, UserProfile } from '@/types';
 import { MOCK_SESSIONS, MOCK_STUDENT, MOCK_STUDENTS_LIST, MOCK_NOTES, MOCK_PLANS, MOCK_DEBRIEFS } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Clock, User, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Clock, User, BookOpen, AlertCircle, Loader2, Video, ExternalLink, Copy, Check, Edit3, Link as LinkIcon } from 'lucide-react';
 
 export default function SessionWorkspacePage() {
   const params = useParams();
@@ -31,6 +31,39 @@ export default function SessionWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Meeting Link State
+  const [isEditingLink, setIsEditingLink] = useState(false);
+  const [editLinkValue, setEditLinkValue] = useState('');
+  const [savingLink, setSavingLink] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleSaveMeetingLink = async () => {
+    setSavingLink(true);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/meeting-link`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meeting_link: editLinkValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update meeting link');
+      }
+      setSession(prev => prev ? { ...prev, meeting_link: editLinkValue } : null);
+      setIsEditingLink(false);
+    } catch (err) {
+      console.error('Error updating meeting link:', err);
+    } finally {
+      setSavingLink(false);
+    }
+  };
 
   useEffect(() => {
     async function loadWorkspaceData() {
@@ -58,6 +91,7 @@ export default function SessionWorkspacePage() {
         }
 
         const activeEmail = currentAuthUser?.email || decodedEmail || 'tutor@tutorflow.com';
+        const isStudentRole = currentAuthUser?.user_metadata?.role === 'student' || activeEmail === 'student@tutorflow.com';
         const currentTutorId = currentAuthUser?.id || (activeEmail === 'david@tutorflow.com' ? 'tutor-2' : 'tutor-1');
 
         if (currentAuthUser) {
@@ -73,8 +107,8 @@ export default function SessionWorkspacePage() {
           setTutorUser({
             id: currentTutorId,
             email: activeEmail,
-            name: activeEmail === 'david@tutorflow.com' ? 'Prof. David Vance' : 'Dr. Sarah Jenkins',
-            role: 'tutor',
+            name: isStudentRole ? 'Alex Johnson' : (activeEmail === 'david@tutorflow.com' ? 'Prof. David Vance' : 'Dr. Sarah Jenkins'),
+            role: isStudentRole ? 'student' : 'tutor',
           });
         }
 
@@ -118,15 +152,25 @@ export default function SessionWorkspacePage() {
           activeStudent = MOCK_STUDENTS_LIST.find(s => s.id === activeSession.student_id) || MOCK_STUDENT;
         }
 
-        // STRICT CROSS-TUTOR ISOLATION CHECK
+        // STRICT ISOLATION GUARD (Supports both Tutor & Student roles)
         if (activeSession) {
-          const currentTutorRef = { id: currentAuthUser?.id, email: activeEmail };
-          if (!isSameTutor(currentTutorRef, activeSession.tutor_id)) {
-            setApiError('Access denied: You can only view sessions assigned to your tutor account.');
-            setSession(null);
-            setStudent(null);
-            setLoading(false);
-            return;
+          const currentUserRef = { id: currentAuthUser?.id, email: activeEmail };
+          if (isStudentRole) {
+            if (!isSameStudent(currentUserRef, activeSession.student_id)) {
+              setApiError('Access denied: You can only view your own assigned sessions.');
+              setSession(null);
+              setStudent(null);
+              setLoading(false);
+              return;
+            }
+          } else {
+            if (!isSameTutor(currentUserRef, activeSession.tutor_id)) {
+              setApiError('Access denied: You can only view sessions assigned to your tutor account.');
+              setSession(null);
+              setStudent(null);
+              setLoading(false);
+              return;
+            }
           }
         }
 
@@ -236,13 +280,16 @@ export default function SessionWorkspacePage() {
     );
   }
 
+  const isStudent = tutorUser?.role === 'student';
+  const dashboardLink = isStudent ? '/student/dashboard' : '/tutor/dashboard';
+
   if (apiError && !session) {
     return (
       <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col">
-        <Navbar currentRole="tutor" userName={tutorUser?.name || 'Tutor'} />
+        <Navbar currentRole={isStudent ? 'student' : 'tutor'} userName={tutorUser?.name || (isStudent ? 'Student' : 'Tutor')} />
         <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-12 space-y-6">
           <Link
-            href="/tutor/dashboard"
+            href={dashboardLink}
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -272,13 +319,13 @@ export default function SessionWorkspacePage() {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col">
-      <Navbar currentRole="tutor" userName={tutorUser?.name || 'Tutor'} />
+      <Navbar currentRole={isStudent ? 'student' : 'tutor'} userName={tutorUser?.name || (isStudent ? 'Student' : 'Tutor')} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Navigation back */}
         <div className="flex items-center justify-between">
           <Link
-            href="/tutor/dashboard"
+            href={dashboardLink}
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -299,8 +346,8 @@ export default function SessionWorkspacePage() {
 
         {/* Session Header Card */}
         <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={session.status} size="lg" />
                 <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800">
@@ -315,7 +362,115 @@ export default function SessionWorkspacePage() {
                 <span>{student.subject} ({student.current_level})</span>
               </p>
             </div>
+
+            {/* Video Call Meeting Link Banner & Actions */}
+            <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Video className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Online Session Link</span>
+                  {session.meeting_link ? (
+                    <a
+                      href={session.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-emerald-400 hover:underline truncate block max-w-[200px]"
+                    >
+                      {session.meeting_link}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">No link added yet</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {session.meeting_link && (
+                  <>
+                    <a
+                      href={session.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all shrink-0"
+                    >
+                      <Video className="w-4 h-4" />
+                      Join Video Call
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </a>
+                    <button
+                      onClick={() => handleCopyLink(session.meeting_link!)}
+                      title="Copy meeting link"
+                      className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                    >
+                      {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </>
+                )}
+
+                {!isStudent && (
+                  <button
+                    onClick={() => {
+                      setEditLinkValue(session.meeting_link || `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`);
+                      setIsEditingLink(true);
+                    }}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                    {session.meeting_link ? 'Edit' : 'Add Link'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Edit Meeting Link Modal / Drawer */}
+          {isEditingLink && (
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700/80 space-y-3 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <LinkIcon className="w-4 h-4 text-indigo-400" />
+                  Update Session Meeting URL (Google Meet, Zoom, MS Teams, etc.)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const code1 = Math.random().toString(36).substring(2, 5);
+                    const code2 = Math.random().toString(36).substring(2, 6);
+                    const code3 = Math.random().toString(36).substring(2, 5);
+                    setEditLinkValue(`https://meet.google.com/${code1}-${code2}-${code3}`);
+                  }}
+                  className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline"
+                >
+                  + Generate Google Meet Link
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://meet.google.com/..."
+                  value={editLinkValue}
+                  onChange={e => setEditLinkValue(e.target.value)}
+                  className="flex-1 p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={handleSaveMeetingLink}
+                  disabled={savingLink}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50"
+                >
+                  {savingLink ? 'Saving...' : 'Save Link'}
+                </button>
+                <button
+                  onClick={() => setIsEditingLink(false)}
+                  className="px-3 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* State Machine Transition Stepper */}

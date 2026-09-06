@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { requireAuth, AuthorizationError } from '@/lib/auth-guards';
+import { requireAuth, requireTutorOwnsStudent, AuthorizationError } from '@/lib/auth-guards';
+import { isSameStudent } from '@/lib/utils';
 import { generateStudentProgressSummary } from '@/lib/ai/service';
 import { isSupabaseConfigured } from '@/lib/auth-helper';
 import { MOCK_STUDENTS_LIST, MOCK_STUDENT, MOCK_DEBRIEFS } from '@/lib/store';
@@ -13,6 +14,14 @@ export async function POST(req: Request) {
 
     if (!student_id) {
       return NextResponse.json({ error: 'Missing student_id' }, { status: 400 });
+    }
+
+    if (authUser.role === 'tutor') {
+      await requireTutorOwnsStudent(student_id);
+    } else if (authUser.role === 'student') {
+      if (!isSameStudent(authUser, student_id)) {
+        throw new AuthorizationError('Forbidden: You can only view your own progress summary', 403);
+      }
     }
 
     let student: StudentProfile | null = null;

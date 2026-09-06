@@ -7,6 +7,7 @@ export interface SessionEmailDetails {
   topic: string;
   scheduledAt: string;
   durationMinutes?: number;
+  meetingLink?: string;
 }
 
 /**
@@ -33,6 +34,7 @@ export async function sendSessionScheduledEmail(details: SessionEmailDetails): P
         <p><strong>Topic:</strong> ${details.topic}</p>
         <p><strong>Date & Time:</strong> ${formattedDate}</p>
         <p><strong>Duration:</strong> ${details.durationMinutes || 60} minutes</p>
+        ${details.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${details.meetingLink}">${details.meetingLink}</a></p>` : ''}
       </div>
       <p>Log in to your Student Dashboard to prepare for your session!</p>
       <br/>

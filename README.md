@@ -112,12 +112,13 @@ If `OPENAI_API_KEY` is unconfigured, rate-limited (429), timed out (503), or pro
 
 ---
 
-## ⚖️ 6. Tradeoffs & Known Limitations
+## ⚖️ 6. Architectural Decisions & Tradeoffs
 
-1. **Dual-Layer Guarding (Database Triggers + Server Guards):** State machine, double-booking, and notes lock are checked in both PostgreSQL PL/pgSQL triggers and Next.js server route handlers to guarantee 100% data integrity even during direct database queries.
-2. **1.5s Debounced HTTP PATCH Autosave:** Selected a 1.5s debounced PATCH interval to balance low network payload volume, low serverless invocation costs, and reliable read-only lock enforcement.
-3. **Structured JSON Mode (`gpt-4o-mini`):** Utilizes `response_format: { type: 'json_object' }` for high schema reliability, low latency, and cost efficiency.
-4. **Non-Blocking Resend Email Service:** Email creation is wrapped in async exception handlers so that third-party email outages never roll back session scheduling.
+1. **No Open Public Registration**: Public self-registration forms are intentionally excluded from the login interface ([`src/app/login/page.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/app/login/page.tsx)). Student accounts are generated exclusively by authenticated tutors via [`POST /api/auth/student`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/app/api/auth/student/route.ts) under their own `tutor_id`. This guarantees strict data privacy and prevents unmanaged accounts.
+2. **Structured Array Data (`TEXT[]`) for Goals & Weak Areas**: `learning_goals` and `weak_areas` are stored as PostgreSQL `TEXT[]` arrays in `public.students`. This structured storage enables bulleted rendering in the UI and precise list formatting in OpenAI system prompts, while [`NewStudentModal.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/NewStudentModal.tsx) parses free-text comma-separated user inputs into array elements seamlessly.
+3. **Dual-Layer Guarding (Database Triggers + Server Guards)**: State machine transitions, double-booking checks, and notes read-only locks are checked in both PostgreSQL PL/pgSQL triggers and Next.js route handlers to guarantee 100% data integrity even during direct DB operations.
+4. **1.5s Debounced HTTP PATCH Autosave**: Selected a 1.5s debounced PATCH interval to balance low network payload volume, low serverless invocation costs, and reliable read-only lock enforcement.
+5. **Extra Scope Features (Video Links & Email)**: Added integrated Google Meet/Zoom meeting links (with generator helpers) and Resend transactional email dispatches beyond the minimum requirements to provide a complete real-world user experience.
 
 ---
 
@@ -147,8 +148,16 @@ With one additional day, I would first integrate real-time collaborative whitebo
 
 ## 📝 9. Tutor Workspace Audit & Fixes (Changelog)
 
-- **Strict Cross-Tutor Isolation**: Added explicit tutor ID resolution and ownership comparison (`activeSession.tutor_id === currentTutorId`) in [`src/app/tutor/sessions/[id]/page.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/app/tutor/sessions/[id]/page.tsx). Manually changing the session URL to another tutor's session ID (e.g., Tutor 1 opening Tutor 2's session) returns **`Access Denied: You can only view sessions assigned to your tutor account`**, blocking unauthorized access.
-- **Full Lifecycle Stepper**: Verified linear state machine progression (`scheduled → in_progress → completed → ai_reviewed`). Invalid transition attempts (e.g. `scheduled → ai_reviewed`) return an explicit **`HTTP 409 Conflict`** error banner.
-- **Debounced Notes & Read-Only Lock**: Confirmed 1.5s debounced PATCH autosave during `in_progress`. Upon transitioning to `completed`, notes lock into read-only mode and are preserved across page reloads.
-- **AI Pre-Session Plan & Post-Session Debrief**: Verified structured JSON generation (3 objectives, 4-point outline, 3 practice questions with solutions). Post-session debrief auto-inserts student homework items and advances session status to `ai_reviewed` upon DB persistence.
+- **Backend Triage & Identity Matching (`src/lib/utils.ts`, `src/lib/auth-helper.ts`)**:
+  - **Root Cause**: `isSameTutor` and `isSameStudent` contained a check (`if (!userA || !userB) return true`) that returned `true` on `null`/`undefined` arguments, causing unintended ownership validation bypasses. In addition, `getAuthUser()` previously did not fallback to checking `public.users` by email if auth user ID differed from seed UUIDs.
+  - **Fix**: Updated `isSameTutor` and `isSameStudent` to evaluate `if (!userA || !userB) return false`. Enhanced `getAuthUser()` to perform secondary email lookup in `public.users` and correctly default `role` to `'student'` for student accounts.
+- **Session Workspace Authorization (`src/app/tutor/sessions/[id]/page.tsx`)**:
+  - **Root Cause**: The workspace checked only tutor ownership (`isSameTutor`), blocking legitimate student access to their assigned sessions with a generic access denied error.
+  - **Fix**: Updated workspace authorization to check role-specific ownership (`isSameStudent` for students, `isSameTutor` for tutors). Allowed assigned students (`student@tutorflow.com`) to view their session details in read-only mode, while denying access (`HTTP 403 / Access Denied`) if a student attempts to open another student's session (e.g. Maria Garcia `student-4` or Rahul Sharma `student-2`).
+- **Student Dashboard Query & Homework Persistence (`src/app/api/sessions/route.ts`, `src/app/api/homework/[id]/route.ts`)**:
+  - **Root Cause**: Student session query did not resolve dynamic student record IDs when auth user IDs differed, returning zero sessions. `PATCH /api/homework/[id]` threw an uncaught error when Supabase environment variables were unconfigured.
+  - **Fix**: Updated `GET /api/sessions` to resolve student IDs via `public.students` table lookup. Added `isSupabaseConfigured()` check and fallback store persistence to `PATCH /api/homework/[id]`.
+- **AI Progress Authorization Guard (`src/app/api/ai/progress/route.ts`)**:
+  - **Root Cause**: `POST /api/ai/progress` validated general authentication (`requireAuth()`) but lacked student/tutor ownership verification.
+  - **Fix**: Added explicit ownership guards (`requireTutorOwnsStudent` for tutors, `isSameStudent` for students) to prevent cross-account progress summary access.
 

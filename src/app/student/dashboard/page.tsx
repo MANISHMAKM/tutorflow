@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { AIProgressModal } from '@/components/AIProgressModal';
 import { Session, StudentHomeworkItem, StudentProfile, SessionNotes, Debrief, UserProfile } from '@/types';
 import { createClient } from '@/lib/supabase/client';
-import { Calendar, CheckSquare, BookOpen, Clock, Lock, Sparkles, Award, Loader2 } from 'lucide-react';
+import { Calendar, CheckSquare, BookOpen, Clock, Lock, Sparkles, Award, Loader2, Video, ExternalLink } from 'lucide-react';
 import { isSameStudent } from '@/lib/utils';
 import { MOCK_STUDENTS_LIST } from '@/lib/store';
 
@@ -299,7 +299,7 @@ export default function StudentDashboardPage() {
 
                 return (
                   <div key={session.id} className="glass-card p-5 rounded-2xl border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={session.status} />
                         <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -309,6 +309,21 @@ export default function StudentDashboardPage() {
                       </div>
                       <h3 className="text-base font-bold text-slate-100">{session.topic}</h3>
                     </div>
+
+                    {session.meeting_link ? (
+                      <a
+                        href={session.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all shrink-0"
+                      >
+                        <Video className="w-4 h-4" />
+                        Join Video Call
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-500 italic shrink-0">Meeting link pending</span>
+                    )}
                   </div>
                 );
               })}

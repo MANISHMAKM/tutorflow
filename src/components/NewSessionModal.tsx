@@ -16,8 +16,16 @@ export function NewSessionModal({ students, onSessionCreated, preselectedStudent
   const [scheduledAt, setScheduledAt] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('60');
   const [topic, setTopic] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const generateMeetLink = () => {
+    const code1 = Math.random().toString(36).substring(2, 5);
+    const code2 = Math.random().toString(36).substring(2, 6);
+    const code3 = Math.random().toString(36).substring(2, 5);
+    setMeetingLink(`https://meet.google.com/${code1}-${code2}-${code3}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +41,7 @@ export function NewSessionModal({ students, onSessionCreated, preselectedStudent
           scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString(),
           duration_minutes: parseInt(durationMinutes, 10),
           topic,
+          meeting_link: meetingLink,
         }),
       });
 
@@ -46,6 +55,7 @@ export function NewSessionModal({ students, onSessionCreated, preselectedStudent
       setIsOpen(false);
       setTopic('');
       setScheduledAt('');
+      setMeetingLink('');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error scheduling session');
     } finally {
@@ -121,6 +131,26 @@ export function NewSessionModal({ students, onSessionCreated, preselectedStudent
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                   className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-300">Online Meeting / Video Link (Optional)</label>
+                  <button
+                    type="button"
+                    onClick={generateMeetLink}
+                    className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline"
+                  >
+                    + Generate Google Meet Link
+                  </button>
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://meet.google.com/abc-defg-hij or https://zoom.us/j/..."
+                  value={meetingLink}
+                  onChange={e => setMeetingLink(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
