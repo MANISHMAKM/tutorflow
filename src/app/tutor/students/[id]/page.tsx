@@ -109,7 +109,7 @@ export default function StudentDetailPage() {
         if (sessionsData && sessionsData.length > 0) {
           setSessions(sessionsData);
         } else {
-          const mockSessions = MOCK_SESSIONS.filter(s => s.student_id === studentId);
+          const mockSessions = MOCK_SESSIONS.filter(s => isSameStudent(studentId, s.student_id) || s.student_id === studentId);
           setSessions(mockSessions);
         }
       } catch (err) {
