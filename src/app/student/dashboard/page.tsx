@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AIProgressModal } from '@/components/AIProgressModal';
@@ -209,6 +210,44 @@ export default function StudentDashboardPage() {
             )}
           </div>
         </div>
+
+        {/* Live Session Alert Banner for Students */}
+        {sessions.some(s => s.status === 'in_progress') && (
+          <div className="p-5 rounded-3xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-emerald-500/10 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <span className="flex h-4 w-4 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+              </span>
+              <div>
+                <h3 className="font-extrabold text-white text-base">🔴 Live Session In Progress!</h3>
+                <p className="text-xs text-emerald-300">
+                  Your tutor has started session: <strong>{sessions.find(s => s.status === 'in_progress')?.topic}</strong>
+                </p>
+              </div>
+            </div>
+
+            {sessions.find(s => s.status === 'in_progress')?.meeting_link ? (
+              <a
+                href={sessions.find(s => s.status === 'in_progress')?.meeting_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 rounded-2xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all shrink-0"
+              >
+                <Video className="w-4 h-4" />
+                Join Live Video Call Now
+                <ExternalLink className="w-4 h-4 opacity-80" />
+              </a>
+            ) : (
+              <Link
+                href={`/tutor/sessions/${sessions.find(s => s.status === 'in_progress')?.id}`}
+                className="px-5 py-3 rounded-2xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all shrink-0"
+              >
+                Open Session Workspace
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Top Cards: Goals & Homework Checklist */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
