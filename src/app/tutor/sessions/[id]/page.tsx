@@ -112,34 +112,66 @@ export default function SessionWorkspacePage() {
           });
         }
 
-        // Fetch session from Supabase or fallback seed store
+        // 1. Fetch session and student profile from single API route endpoint
         let activeSession: Session | null = null;
         let activeStudent: StudentProfile | null = null;
 
         try {
-          const { data: sessionData, error: sessionErr } = await supabase
-            .from('sessions')
-            .select('*, student:students(*)')
-            .eq('id', sessionId)
-            .single();
-
-          if (!sessionErr && sessionData) {
-            activeSession = sessionData as Session;
-            if (sessionData.student && typeof sessionData.student === 'object' && 'name' in sessionData.student) {
-              activeStudent = sessionData.student as unknown as StudentProfile;
-            } else if (sessionData.student_id) {
-              const { data: studentDb } = await supabase
-                .from('students')
-                .select('*')
-                .eq('id', sessionData.student_id)
-                .single();
-              if (studentDb) activeStudent = studentDb as StudentProfile;
-            }
+          const singleRes = await fetch(`/api/sessions/${sessionId}`);
+          if (singleRes.ok) {
+            const singleData = await singleRes.json();
+            if (singleData.session) activeSession = singleData.session;
+            if (singleData.student) activeStudent = singleData.student;
           }
-        } catch (err) {
-          console.warn('Supabase session fetch error in workspace:', err);
+        } catch (e) {
+          console.warn('API single session fetch exception:', e);
         }
 
+        // 2. Fetch session from Supabase direct
+        if (!activeSession) {
+          try {
+            const { data: sessionData, error: sessionErr } = await supabase
+              .from('sessions')
+              .select('*, student:students(*)')
+              .eq('id', sessionId)
+              .single();
+
+            if (!sessionErr && sessionData) {
+              activeSession = sessionData as Session;
+              if (sessionData.student && typeof sessionData.student === 'object' && 'name' in sessionData.student) {
+                activeStudent = sessionData.student as unknown as StudentProfile;
+              } else if (sessionData.student_id) {
+                const { data: studentDb } = await supabase
+                  .from('students')
+                  .select('*')
+                  .eq('id', sessionData.student_id)
+                  .single();
+                if (studentDb) activeStudent = studentDb as StudentProfile;
+              }
+            }
+          } catch (err) {
+            console.warn('Supabase session fetch error in workspace:', err);
+          }
+        }
+
+        // 3. Fetch from /api/sessions list endpoint
+        if (!activeSession) {
+          try {
+            const apiRes = await fetch('/api/sessions');
+            if (apiRes.ok) {
+              const { sessions: apiSessions } = await apiRes.json();
+              if (apiSessions && Array.isArray(apiSessions)) {
+                const foundS = apiSessions.find((s: Session) => s.id === sessionId);
+                if (foundS) {
+                  activeSession = foundS;
+                  if (foundS.student) activeStudent = foundS.student;
+                }
+              }
+            }
+          } catch (e) {}
+        }
+
+        // 4. Fallback to client seed store
         if (!activeSession) {
           const mockS = MOCK_SESSIONS.find(s => s.id === sessionId);
           if (mockS) {
@@ -148,8 +180,19 @@ export default function SessionWorkspacePage() {
           }
         }
 
+        // 5. Ensure student profile is resolved if activeSession exists
         if (activeSession && !activeStudent) {
-          activeStudent = MOCK_STUDENTS_LIST.find(s => s.id === activeSession.student_id) || MOCK_STUDENT;
+          try {
+            const stRes = await fetch(`/api/students/${activeSession.student_id}`);
+            if (stRes.ok) {
+              const { student: fetchedSt } = await stRes.json();
+              if (fetchedSt) activeStudent = fetchedSt;
+            }
+          } catch (e) {}
+
+          if (!activeStudent) {
+            activeStudent = MOCK_STUDENTS_LIST.find(s => s.id === activeSession.student_id || isSameStudent(activeSession.student_id, s.id)) || MOCK_STUDENT;
+          }
         }
 
         // STRICT ISOLATION GUARD (Supports both Tutor & Student roles)
