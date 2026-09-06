@@ -100,7 +100,11 @@ export async function POST(req: Request) {
           .from('sessions')
           .select('id, scheduled_at, duration_minutes, topic')
           .eq('tutor_id', tutor.id);
-        if (data) existingSessions = data;
+        if (data && data.length > 0) {
+          existingSessions = data;
+        } else {
+          existingSessions = MOCK_SESSIONS.filter(s => isSameTutor(tutor, s.tutor_id));
+        }
       } catch (err) {
         console.warn('Supabase overlap query failed, checking seed sessions:', err);
         existingSessions = MOCK_SESSIONS.filter(s => isSameTutor(tutor, s.tutor_id));
