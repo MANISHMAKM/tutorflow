@@ -28,16 +28,17 @@ export function validateStateTransition(
     return; // No-op change allowed
   }
 
-  const validNextStates: Record<SessionStatus, SessionStatus | null> = {
-    scheduled: 'in_progress',
-    in_progress: 'completed',
-    completed: 'ai_reviewed',
-    ai_reviewed: null, // Terminal state
-  };
+  const stateOrder: SessionStatus[] = ['scheduled', 'in_progress', 'completed', 'ai_reviewed'];
+  const currentIndex = stateOrder.indexOf(currentStatus);
+  const newIndex = stateOrder.indexOf(newStatus);
 
-  const expectedNextState = validNextStates[currentStatus];
+  if (currentIndex === -1 || newIndex === -1) {
+    throw new StateTransitionError(currentStatus, newStatus);
+  }
 
-  if (expectedNextState !== newStatus) {
+  // Allow adjacent forward (+1) and backward (-1) step transitions
+  const stepDiff = Math.abs(newIndex - currentIndex);
+  if (stepDiff > 1) {
     throw new StateTransitionError(currentStatus, newStatus);
   }
 }
