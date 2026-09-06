@@ -28,8 +28,12 @@ export async function GET() {
           console.warn(`[DB WARNING] Supabase students query error: ${error.message}`);
         }
       } catch (dbErr) {
-        console.warn('Supabase students query caught error, returning seed fallback:', dbErr);
+        console.warn('Supabase students query caught error:', dbErr);
       }
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ students: dbStudents });
     }
 
     const dbIds = new Set(dbStudents.map(s => s.id));

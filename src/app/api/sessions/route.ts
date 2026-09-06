@@ -42,8 +42,12 @@ export async function GET() {
           console.warn(`[DB WARNING] Supabase sessions query returned error: ${error.message}`);
         }
       } catch (dbErr) {
-        console.warn('Supabase sessions query caught error, returning seed fallback:', dbErr);
+        console.warn('Supabase sessions query caught error:', dbErr);
       }
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ sessions: dbSessions });
     }
 
     const existingIds = new Set(dbSessions.map(s => s.id));
