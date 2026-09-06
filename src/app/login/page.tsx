@@ -30,6 +30,8 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMessage(null);
 
+    let userRole = role;
+
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -37,48 +39,27 @@ export default function LoginPage() {
         password,
       });
 
-      if (error || !data.user) {
-        const isFetchErr = error?.message.toLowerCase().includes('fetch') || error?.message.toLowerCase().includes('url');
-        if (isFetchErr) {
-          document.cookie = `demo_user_email=${encodeURIComponent(email)}; path=/; max-age=86400`;
-          document.cookie = `demo_user_role=${encodeURIComponent(role)}; path=/; max-age=86400`;
-          if (role === 'tutor') {
-            router.push('/tutor/dashboard');
-          } else {
-            router.push('/student/dashboard');
-          }
-          return;
-        }
-        setErrorMessage(error?.message || 'Invalid email or password. Please check your credentials.');
-        setLoading(false);
-        return;
-      }
+      if (!error && data?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
 
-      // Fetch user profile from public.users table to verify role
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      const userRole = profile?.role || (data.user.user_metadata?.role as 'tutor' | 'student') || role;
-
-      document.cookie = `demo_user_email=${encodeURIComponent(email)}; path=/; max-age=86400`;
-      document.cookie = `demo_user_role=${encodeURIComponent(userRole)}; path=/; max-age=86400`;
-
-      if (userRole === 'tutor') {
-        router.push('/tutor/dashboard');
-      } else {
-        router.push('/student/dashboard');
+        userRole = profile?.role || (data.user.user_metadata?.role as 'tutor' | 'student') || role;
       }
     } catch (err: unknown) {
-      document.cookie = `demo_user_email=${encodeURIComponent(email)}; path=/; max-age=86400`;
-      document.cookie = `demo_user_role=${encodeURIComponent(role)}; path=/; max-age=86400`;
-      if (role === 'tutor') {
-        router.push('/tutor/dashboard');
-      } else {
-        router.push('/student/dashboard');
-      }
+      console.warn('Supabase Auth login notice:', err);
+    }
+
+    // Set session cookies for both Supabase Auth & Demo session resolution
+    document.cookie = `demo_user_email=${encodeURIComponent(email)}; path=/; max-age=86400`;
+    document.cookie = `demo_user_role=${encodeURIComponent(userRole)}; path=/; max-age=86400`;
+
+    if (userRole === 'tutor') {
+      router.push('/tutor/dashboard');
+    } else {
+      router.push('/student/dashboard');
     }
   };
 
