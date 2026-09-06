@@ -71,17 +71,49 @@ export default function StudentDetailPage() {
           });
         }
 
-        // Fetch target student profile from Supabase or seed store
-        const { data: studentData, error: studentErr } = await supabase
-          .from('students')
-          .select('*')
-          .eq('id', studentId)
-          .single();
+        // 1. Fetch target student profile from single API route endpoint
+        let activeStudent: StudentProfile | null = null;
+        try {
+          const singleRes = await fetch(`/api/students/${studentId}`);
+          if (singleRes.ok) {
+            const { student: singleSt } = await singleRes.json();
+            if (singleSt) activeStudent = singleSt;
+          }
+        } catch (e) {}
 
-        let activeStudent: StudentProfile | null = studentData as StudentProfile | null;
+        // 2. Fetch target student profile from Supabase
+        if (!activeStudent) {
+          try {
+            const { data: studentData, error: studentErr } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', studentId)
+              .single();
 
-        if (studentErr || !studentData) {
-          console.warn(`[STUDENT DETAIL FETCH LOG] Supabase query for student ${studentId} error: ${studentErr?.message}. Checking seed store.`);
+            if (!studentErr && studentData) {
+              activeStudent = studentData as StudentProfile;
+            }
+          } catch (e) {}
+        }
+
+        // 3. Fetch from /api/students API route if DB query didn't return profile
+        if (!activeStudent) {
+          try {
+            const apiRes = await fetch('/api/students');
+            if (apiRes.ok) {
+              const { students: apiStudents } = await apiRes.json();
+              if (apiStudents && Array.isArray(apiStudents)) {
+                const foundApi = apiStudents.find((s: StudentProfile) => isSameStudent(studentId, s.id) || s.id === studentId);
+                if (foundApi) activeStudent = foundApi;
+              }
+            }
+          } catch (apiErr) {
+            console.warn('API students lookup caught exception:', apiErr);
+          }
+        }
+
+        // 4. Fallback to client seed store
+        if (!activeStudent) {
           const mockSt = MOCK_STUDENTS_LIST.find(s => isSameStudent(studentId, s.id) || s.id === studentId);
           if (mockSt) activeStudent = mockSt;
         }
@@ -104,15 +136,29 @@ export default function StudentDetailPage() {
         setStudent(activeStudent);
 
         // Fetch sessions for this student
-        const { data: sessionsData } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('student_id', studentId)
-          .order('scheduled_at', { ascending: false });
+        try {
+          const { data: sessionsData } = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('student_id', studentId)
+            .order('scheduled_at', { ascending: false });
 
-        if (sessionsData && sessionsData.length > 0) {
-          setSessions(sessionsData);
-        } else {
+          if (sessionsData && sessionsData.length > 0) {
+            setSessions(sessionsData);
+          } else {
+            const res = await fetch('/api/sessions');
+            if (res.ok) {
+              const { sessions: apiSessions } = await res.json();
+              if (apiSessions && Array.isArray(apiSessions)) {
+                const filtered = apiSessions.filter((s: Session) => isSameStudent(studentId, s.student_id) || s.student_id === studentId);
+                setSessions(filtered);
+              }
+            } else {
+              const mockSessions = MOCK_SESSIONS.filter(s => isSameStudent(studentId, s.student_id) || s.student_id === studentId);
+              setSessions(mockSessions);
+            }
+          }
+        } catch (e) {
           const mockSessions = MOCK_SESSIONS.filter(s => isSameStudent(studentId, s.student_id) || s.student_id === studentId);
           setSessions(mockSessions);
         }

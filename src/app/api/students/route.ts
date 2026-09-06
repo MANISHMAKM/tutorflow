@@ -12,31 +12,30 @@ export async function GET() {
 
     console.log(`[AUTH LOG] GET /api/students for tutor: id=${tutor.id}, email=${tutor.email}`);
 
-    if (!isSupabaseConfigured()) {
-      const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id));
-      return NextResponse.json({ students: fallback });
+    let dbStudents: any[] = [];
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { data: students, error } = await supabase
+          .from('students')
+          .select('*')
+          .eq('tutor_id', tutor.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && students) {
+          dbStudents = students;
+        } else if (error) {
+          console.warn(`[DB WARNING] Supabase students query error: ${error.message}`);
+        }
+      } catch (dbErr) {
+        console.warn('Supabase students query caught error, returning seed fallback:', dbErr);
+      }
     }
 
-    try {
-      const supabase = await createClient();
-      const { data: students, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('tutor_id', tutor.id)
-        .order('created_at', { ascending: false });
-
-      if (!error && students && students.length > 0) {
-        return NextResponse.json({ students });
-      }
-      if (error) {
-        console.warn(`[DB WARNING] Supabase students query error: ${error.message}`);
-      }
-    } catch (dbErr) {
-      console.warn('Supabase students query caught error, returning seed fallback:', dbErr);
-    }
-
-    const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id));
-    return NextResponse.json({ students: fallback });
+    const dbIds = new Set(dbStudents.map(s => s.id));
+    const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id) && !dbIds.has(s.id));
+    
+    return NextResponse.json({ students: [...dbStudents, ...fallback] });
   } catch (err: unknown) {
     if (err instanceof AuthorizationError) {
       return NextResponse.json({ error: err.message }, { status: err.statusCode });

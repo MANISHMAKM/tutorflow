@@ -13,54 +13,49 @@ export async function GET() {
 
     console.log(`[AUTH LOG] GET /api/sessions for authUser: id=${authUser.id}, email=${authUser.email}, role=${authUser.role}`);
 
-    if (!isSupabaseConfigured()) {
-      let fallback = MOCK_SESSIONS;
-      if (authUser.role === 'student') {
-        fallback = fallback.filter(s => isSameStudent(authUser, s.student_id));
-      } else if (authUser.role === 'tutor') {
-        fallback = fallback.filter(s => isSameTutor(authUser, s.tutor_id));
+    let dbSessions: any[] = [];
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        let query = supabase.from('sessions').select(`
+          *,
+          student:students(*),
+          notes:session_notes(*)
+        `).order('scheduled_at', { ascending: true });
+
+        if (authUser.role === 'student') {
+          const { data: studentRecord } = await supabase
+            .from('students')
+            .select('id')
+            .eq('id', authUser.id)
+            .single();
+          const targetStudentId = studentRecord?.id || authUser.id;
+          query = query.eq('student_id', targetStudentId);
+        } else if (authUser.role === 'tutor') {
+          query = query.eq('tutor_id', authUser.id);
+        }
+
+        const { data: sessions, error } = await query;
+        if (!error && sessions) {
+          dbSessions = sessions;
+        } else if (error) {
+          console.warn(`[DB WARNING] Supabase sessions query returned error: ${error.message}`);
+        }
+      } catch (dbErr) {
+        console.warn('Supabase sessions query caught error, returning seed fallback:', dbErr);
       }
-      return NextResponse.json({ sessions: fallback });
     }
 
-    try {
-      const supabase = await createClient();
-      let query = supabase.from('sessions').select(`
-        *,
-        student:students(*),
-        notes:session_notes(*)
-      `).order('scheduled_at', { ascending: true });
-
-      if (authUser.role === 'student') {
-        const { data: studentRecord } = await supabase
-          .from('students')
-          .select('id')
-          .eq('id', authUser.id)
-          .single();
-        const targetStudentId = studentRecord?.id || authUser.id;
-        query = query.eq('student_id', targetStudentId);
-      } else if (authUser.role === 'tutor') {
-        query = query.eq('tutor_id', authUser.id);
-      }
-
-      const { data: sessions, error } = await query;
-      if (!error && sessions && sessions.length > 0) {
-        return NextResponse.json({ sessions });
-      }
-      if (error) {
-        console.warn(`[DB WARNING] Supabase sessions query returned error: ${error.message}`);
-      }
-    } catch (dbErr) {
-      console.warn('Supabase sessions query caught error, returning seed fallback:', dbErr);
-    }
-
+    const existingIds = new Set(dbSessions.map(s => s.id));
     let fallback = MOCK_SESSIONS;
     if (authUser.role === 'student') {
       fallback = fallback.filter(s => isSameStudent(authUser, s.student_id));
     } else if (authUser.role === 'tutor') {
       fallback = fallback.filter(s => isSameTutor(authUser, s.tutor_id));
     }
-    return NextResponse.json({ sessions: fallback });
+    const extraMock = fallback.filter(s => !existingIds.has(s.id));
+
+    return NextResponse.json({ sessions: [...dbSessions, ...extraMock] });
   } catch (err: unknown) {
     if (err instanceof AuthorizationError) {
       return NextResponse.json({ error: err.message }, { status: err.statusCode });
