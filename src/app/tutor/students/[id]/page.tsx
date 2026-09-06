@@ -48,6 +48,7 @@ export default function StudentDetailPage() {
         }
 
         const activeEmail = currentAuthUser?.email || decodedEmail || 'tutor@tutorflow.com';
+        let activeTutorId = currentAuthUser?.id || (activeEmail === 'david@tutorflow.com' ? 'tutor-2' : 'tutor-1');
 
         if (currentAuthUser) {
           try {
@@ -56,11 +57,14 @@ export default function StudentDetailPage() {
               .select('*')
               .eq('id', currentAuthUser.id)
               .single();
-            if (profile) setTutorUser(profile as UserProfile);
+            if (profile) {
+              setTutorUser(profile as UserProfile);
+              activeTutorId = profile.id;
+            }
           } catch (e) {}
         } else {
           setTutorUser({
-            id: activeEmail === 'david@tutorflow.com' ? 'tutor-2' : 'tutor-1',
+            id: activeTutorId,
             email: activeEmail,
             name: activeEmail === 'david@tutorflow.com' ? 'Prof. David Vance' : 'Dr. Sarah Jenkins',
             role: 'tutor',
@@ -89,7 +93,7 @@ export default function StudentDetailPage() {
         }
 
         // Verify tutor ownership of this student
-        const currentTutorRef = currentAuthUser?.id ? { id: currentAuthUser.id, email: activeEmail } : { email: activeEmail };
+        const currentTutorRef = { id: activeTutorId, email: activeEmail };
         if (!isSameTutor(currentTutorRef, activeStudent.tutor_id)) {
           setErrorMessage('Access denied: You can only view students assigned to your tutor account.');
           setStudent(null);

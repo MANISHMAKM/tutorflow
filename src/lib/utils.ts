@@ -19,15 +19,20 @@ export function isSameTutor(
   const idB = typeof userB === 'string' ? userB : userB.id || '';
   const emailB = typeof userB === 'string' ? (userB.includes('@') ? userB : '') : userB.email || '';
 
-  const isTutor1_A = idA === 'tutor-1' || idA === '00000000-0000-0000-0000-000000000001' || emailA.toLowerCase() === 'tutor@tutorflow.com';
-  const isTutor1_B = idB === 'tutor-1' || idB === '00000000-0000-0000-0000-000000000001' || emailB.toLowerCase() === 'tutor@tutorflow.com';
+  const isT1_A = idA === 'tutor-1' || idA === '00000000-0000-0000-0000-000000000001' || emailA.toLowerCase() === 'tutor@tutorflow.com';
+  const isT1_B = idB === 'tutor-1' || idB === '00000000-0000-0000-0000-000000000001' || emailB.toLowerCase() === 'tutor@tutorflow.com';
 
-  const isTutor2_A = idA === 'tutor-2' || idA === '00000000-0000-0000-0000-000000000002' || emailA.toLowerCase() === 'david@tutorflow.com';
-  const isTutor2_B = idB === 'tutor-2' || idB === '00000000-0000-0000-0000-000000000002' || emailB.toLowerCase() === 'david@tutorflow.com';
+  const isT2_A = idA === 'tutor-2' || idA === '00000000-0000-0000-0000-000000000002' || emailA.toLowerCase() === 'david@tutorflow.com';
+  const isT2_B = idB === 'tutor-2' || idB === '00000000-0000-0000-0000-000000000002' || emailB.toLowerCase() === 'david@tutorflow.com';
 
-  if (isTutor1_A && isTutor1_B) return true;
-  if (isTutor2_A && isTutor2_B) return true;
+  if (isT1_A && (isT1_B || !idB || idB === 'tutor-1' || idB === '00000000-0000-0000-0000-000000000001')) return true;
+  if (isT1_B && (isT1_A || !idA || idA === 'tutor-1' || idA === '00000000-0000-0000-0000-000000000001')) return true;
+
+  if (isT2_A && (isT2_B || !idB || idB === 'tutor-2' || idB === '00000000-0000-0000-0000-000000000002')) return true;
+  if (isT2_B && (isT2_A || !idA || idA === 'tutor-2' || idA === '00000000-0000-0000-0000-000000000002')) return true;
+
   if (idA !== '' && idA === idB) return true;
+  if (emailA !== '' && emailA.toLowerCase() === emailB.toLowerCase()) return true;
 
   return false;
 }
