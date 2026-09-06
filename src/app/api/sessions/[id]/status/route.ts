@@ -3,8 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { requireTutorOwnsSession, AuthorizationError } from '@/lib/auth-guards';
 import { validateStateTransition, StateTransitionError } from '@/lib/state-machine';
 import { isSupabaseConfigured } from '@/lib/auth-helper';
-import { MOCK_SESSIONS } from '@/lib/store';
+import { MOCK_SESSIONS, MOCK_STUDENTS_LIST } from '@/lib/store';
 import { SessionStatus } from '@/types';
+import { sendSessionStartedEmail } from '@/lib/email/service';
 
 export async function PATCH(
   req: Request,
@@ -20,22 +21,28 @@ export async function PATCH(
     }
 
     // Server-side tutor ownership check
-    await requireTutorOwnsSession(sessionId);
+    const tutor = await requireTutorOwnsSession(sessionId);
 
     let currentStatus: SessionStatus = 'scheduled';
     let sessionFound = false;
+    let targetTopic = '';
+    let targetMeetingLink = '';
+    let targetStudentId = '';
 
     if (isSupabaseConfigured()) {
       try {
         const supabase = await createClient();
         const { data: session, error: fetchError } = await supabase
           .from('sessions')
-          .select('status')
+          .select('status, topic, meeting_link, student_id')
           .eq('id', sessionId)
           .single();
 
         if (!fetchError && session) {
           currentStatus = session.status as SessionStatus;
+          targetTopic = session.topic;
+          targetMeetingLink = session.meeting_link;
+          targetStudentId = session.student_id;
           sessionFound = true;
         }
       } catch (err) {
@@ -47,6 +54,9 @@ export async function PATCH(
       const mockS = MOCK_SESSIONS.find(s => s.id === sessionId);
       if (mockS) {
         currentStatus = mockS.status;
+        targetTopic = mockS.topic;
+        targetMeetingLink = mockS.meeting_link || '';
+        targetStudentId = mockS.student_id;
         sessionFound = true;
       }
     }
@@ -71,6 +81,21 @@ export async function PATCH(
         );
       }
       throw err;
+    }
+
+    // Dispatch email notification to student when session starts
+    if (newStatus === 'in_progress' && currentStatus !== 'in_progress') {
+      const studentMatch = MOCK_STUDENTS_LIST.find(s => s.id === targetStudentId);
+      const studentEmail = studentMatch?.user?.email || (studentMatch as { email?: string })?.email || 'student@tutorflow.com';
+      const studentName = studentMatch?.name || 'Student';
+
+      sendSessionStartedEmail({
+        studentEmail,
+        studentName,
+        tutorName: tutor.name,
+        topic: targetTopic || '1-on-1 Tutoring Session',
+        meetingLink: targetMeetingLink,
+      }).catch(err => console.warn('Async session started email exception:', err));
     }
 
     // Execute state update in Supabase DB if configured
