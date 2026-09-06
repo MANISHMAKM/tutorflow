@@ -81,13 +81,13 @@ The database schema is defined in [`supabase/schema.sql`](file:///c:/Users/manis
 
 ### A. Session State Machine Strategy
 The lifecycle strictly follows a linear 4-stage sequence:
-$$\text{scheduled} \longrightarrow \text{in\_progress} \longrightarrow \text{completed} \longrightarrow \text{ai\_reviewed}$$
+`scheduled` → `in_progress` → `completed` → `ai_reviewed`
 - **Dual Enforcement**: Checked by PostgreSQL trigger [`trg_enforce_session_state`](file:///c:/Users/manis/OneDrive/Desktop/finquo/supabase/schema.sql#L90-L119) and server validation [`validateStateTransition()`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/lib/state-machine.ts#L23-L43).
 - Any skipping (e.g. `scheduled → completed`) or rewinding returns **`HTTP 409 Conflict`**.
 
 ### B. Double-Booking Overlap Strategy
 - Verifies tutor schedule overlap using interval math:
-  $$(\text{newStart} < \text{existingEnd}) \quad \text{AND} \quad (\text{newEnd} > \text{existingStart})$$
+  `(newStart < existingEnd) AND (newEnd > existingStart)`
 - Enforced at database trigger level (`trg_check_double_booking`) and server route level ([`/api/sessions/route.ts`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/app/api/sessions/route.ts)), returning **`HTTP 409 Conflict`** on scheduling collisions.
 
 ### C. Notes Autosave & Lock Strategy
