@@ -287,6 +287,8 @@ export default function SessionWorkspacePage() {
     }
   }, [sessionId, router]);
 
+  const [sessionStartedToast, setSessionStartedToast] = useState<string | null>(null);
+
   // Handle State Machine Transition request
   const handleStatusChange = async (newStatus: SessionStatus) => {
     setUpdatingStatus(true);
@@ -306,6 +308,11 @@ export default function SessionWorkspacePage() {
       }
 
       setSession(prev => prev ? { ...prev, status: newStatus } : null);
+
+      if (newStatus === 'in_progress') {
+        setSessionStartedToast(`🔴 Live Session Started! Notification email sent to ${student?.name || 'student'}.`);
+        setTimeout(() => setSessionStartedToast(null), 6000);
+      }
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Invalid state transition rejected');
       throw err;
@@ -515,6 +522,20 @@ export default function SessionWorkspacePage() {
             </div>
           )}
         </div>
+
+        {/* Live Session Started Toast Notification Banner */}
+        {sessionStartedToast && (
+          <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-lg shadow-emerald-500/10 animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-3 w-3 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <strong className="text-emerald-100">{sessionStartedToast}</strong>
+            </div>
+            <button onClick={() => setSessionStartedToast(null)} className="text-emerald-400 hover:text-white font-bold">✕</button>
+          </div>
+        )}
 
         {/* State Machine Transition Stepper */}
         <StateStepper
