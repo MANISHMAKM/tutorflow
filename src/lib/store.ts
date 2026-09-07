@@ -175,6 +175,95 @@ export const MOCK_STUDENT_EMMA: StudentProfile = {
   },
 };
 
+export const MOCK_STUDENT_DANIEL: StudentProfile = {
+  id: 'student-9',
+  tutor_id: 'tutor-1',
+  name: 'Daniel Kim',
+  subject: 'Linear Algebra & Multivariable Calculus',
+  current_level: 'College Freshman / AP Math',
+  learning_goals: [
+    'Master Matrix Eigenvalues & Eigenvectors',
+    'Understand Partial Derivatives & Gradient Vectors',
+    'Ace Multivariable Calculus Final Exam',
+  ],
+  weak_areas: [
+    'Gram-Schmidt orthogonalization algorithm',
+    'Lagrange multiplier constraint setup',
+  ],
+  user: {
+    id: 'student-9',
+    role: 'student',
+    name: 'Daniel Kim',
+    email: 'daniel@tutorflow.com',
+  },
+};
+
+export const MOCK_STUDENT_CHLOE: StudentProfile = {
+  id: 'student-10',
+  tutor_id: 'tutor-1',
+  name: 'Chloe Dubois',
+  subject: 'AP Macroeconomics & Finance',
+  current_level: 'Grade 12 / AP Level',
+  learning_goals: [
+    'Master Aggregate Demand/Supply Curves & Fiscal Policy',
+    'Score 5 on AP Macroeconomics Exam',
+  ],
+  weak_areas: [
+    'Money multiplier calculations',
+    'Foreign exchange market equilibrium shifts',
+  ],
+  user: {
+    id: 'student-10',
+    role: 'student',
+    name: 'Chloe Dubois',
+    email: 'chloe@tutorflow.com',
+  },
+};
+
+export const MOCK_STUDENT_ZACK: StudentProfile = {
+  id: 'student-11',
+  tutor_id: 'tutor-2',
+  name: 'Zack Snyder',
+  subject: 'AP Microeconomics & Game Theory',
+  current_level: 'Grade 11 / AP Level',
+  learning_goals: [
+    'Master Nash Equilibrium & Payoff Matrices',
+    'Understand Monopoly vs Oligopoly Market Structures',
+  ],
+  weak_areas: [
+    'Marginal revenue product calculations',
+    'Deadweight loss calculation in price ceilings',
+  ],
+  user: {
+    id: 'student-11',
+    role: 'student',
+    name: 'Zack Snyder',
+    email: 'zack@tutorflow.com',
+  },
+};
+
+export const MOCK_STUDENT_ARIA: StudentProfile = {
+  id: 'student-12',
+  tutor_id: 'tutor-2',
+  name: 'Aria Tanaka',
+  subject: 'Genetics & Molecular Biology',
+  current_level: 'Grade 11 / AP Biology',
+  learning_goals: [
+    'Master DNA Replication & CRISPR Gene Editing',
+    'Score 780+ on SAT Biology E/M Test',
+  ],
+  weak_areas: [
+    'Pedigree chart probability calculations',
+    'Lac operon gene regulation mechanisms',
+  ],
+  user: {
+    id: 'student-12',
+    role: 'student',
+    name: 'Aria Tanaka',
+    email: 'aria@tutorflow.com',
+  },
+};
+
 // Combined Student Store
 export const MOCK_STUDENTS_LIST: StudentProfile[] = [
   MOCK_STUDENT,
@@ -182,9 +271,13 @@ export const MOCK_STUDENTS_LIST: StudentProfile[] = [
   MOCK_STUDENT_ANU,
   MOCK_STUDENT_SOPHIA,
   MOCK_STUDENT_MARCUS,
+  MOCK_STUDENT_DANIEL,
+  MOCK_STUDENT_CHLOE,
   MOCK_STUDENT_MARIA,
   MOCK_STUDENT_PETER,
   MOCK_STUDENT_EMMA,
+  MOCK_STUDENT_ZACK,
+  MOCK_STUDENT_ARIA,
 ];
 
 export const MOCK_SESSIONS: Session[] = [
@@ -255,6 +348,28 @@ export const MOCK_SESSIONS: Session[] = [
     student: MOCK_STUDENT_MARCUS,
   },
   {
+    id: 'session-107',
+    tutor_id: 'tutor-1',
+    student_id: 'student-9',
+    scheduled_at: new Date(Date.now() + 86400000 * 4).toISOString(),
+    duration_minutes: 60,
+    topic: 'Eigenvalues, Eigenvectors & Diagonalization Matrix Transformations',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/math-eigen-diag',
+    student: MOCK_STUDENT_DANIEL,
+  },
+  {
+    id: 'session-109',
+    tutor_id: 'tutor-1',
+    student_id: 'student-10',
+    scheduled_at: new Date(Date.now() + 86400000 * 2).toISOString(),
+    duration_minutes: 60,
+    topic: 'Central Bank Monetary Policy & Money Supply Expansion',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/econ-monetary-policy',
+    student: MOCK_STUDENT_CHLOE,
+  },
+  {
     id: 'session-201',
     tutor_id: 'tutor-2',
     student_id: 'student-4',
@@ -276,7 +391,30 @@ export const MOCK_SESSIONS: Session[] = [
     meeting_link: 'https://meet.google.com/chem-sn1-sn2',
     student: MOCK_STUDENT_EMMA,
   },
+  {
+    id: 'session-203',
+    tutor_id: 'tutor-2',
+    student_id: 'student-11',
+    scheduled_at: new Date(Date.now() + 86400000 * 1).toISOString(),
+    duration_minutes: 60,
+    topic: 'Game Theory, Prisoner Dilemma & Nash Equilibrium Matrices',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/econ-game-nash',
+    student: MOCK_STUDENT_ZACK,
+  },
+  {
+    id: 'session-204',
+    tutor_id: 'tutor-2',
+    student_id: 'student-12',
+    scheduled_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    duration_minutes: 60,
+    topic: 'CRISPR-Cas9 Mechanism & Recombinant DNA Technology',
+    status: 'ai_reviewed',
+    meeting_link: 'https://meet.google.com/bio-crispr-cas9',
+    student: MOCK_STUDENT_ARIA,
+  },
 ];
+
 
 export const MOCK_NOTES: Record<string, SessionNotes> = {
   'session-102': {

@@ -17,6 +17,10 @@ DECLARE
   student6_id UUID := '00000000-0000-0000-0000-000000000008';
   student7_id UUID := '00000000-0000-0000-0000-000000000009';
   student8_id UUID := '00000000-0000-0000-0000-00000000000a';
+  student9_id UUID := '00000000-0000-0000-0000-00000000000b';
+  student10_id UUID := '00000000-0000-0000-0000-00000000000c';
+  student11_id UUID := '00000000-0000-0000-0000-00000000000d';
+  student12_id UUID := '00000000-0000-0000-0000-00000000000e';
 
   tutor1_pass TEXT := extensions.crypt('TutorPass123!', extensions.gen_salt('bf'));
   tutor2_pass TEXT := extensions.crypt('TutorPass123!', extensions.gen_salt('bf'));
@@ -79,14 +83,18 @@ BEGIN
     (student5_id, 'student', 'Peter Parker', 'peter@tutorflow.com'),
     (student6_id, 'student', 'Sophia Chen', 'sophia@tutorflow.com'),
     (student7_id, 'student', 'Marcus Vance', 'marcus@tutorflow.com'),
-    (student8_id, 'student', 'Emma Watson', 'emma@tutorflow.com')
+    (student8_id, 'student', 'Emma Watson', 'emma@tutorflow.com'),
+    (student9_id, 'student', 'Daniel Kim', 'daniel@tutorflow.com'),
+    (student10_id, 'student', 'Chloe Dubois', 'chloe@tutorflow.com'),
+    (student11_id, 'student', 'Zack Snyder', 'zack@tutorflow.com'),
+    (student12_id, 'student', 'Aria Tanaka', 'aria@tutorflow.com')
   ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email;
 
 
   ------------------------------------------------------------------------------
   -- 3. Insert into public.students
   ------------------------------------------------------------------------------
-  -- Tutor 1 (Dr. Sarah Jenkins) owns Alex, Rahul, Anu, Sophia, Marcus
+  -- Tutor 1 (Dr. Sarah Jenkins) owns Alex, Rahul, Anu, Sophia, Marcus, Daniel, Chloe
   INSERT INTO public.students (id, tutor_id, name, subject, current_level, learning_goals, weak_areas) VALUES
     (student1_id, tutor1_id, 'Alex Johnson', 'Mathematics & Physics', 'Grade 11 / AP Level',
      ARRAY['Score 750+ on SAT Math', 'Master Kinematics & Quadratic Optimization', 'Build problem solving speed'],
@@ -108,7 +116,15 @@ BEGIN
      ARRAY['Master Electromagnetic Induction & Maxwell Equations', 'Achieve Grade 7 on IB Physics HL Portfolio'],
      ARRAY['Lenz Law directional vector determination', 'Quantum wave-particle duality equations']),
 
-  -- Tutor 2 (Prof. David Vance) owns Maria, Peter, Emma
+    (student9_id, tutor1_id, 'Daniel Kim', 'Linear Algebra & Multivariable Calculus', 'College Freshman / AP Math',
+     ARRAY['Master Matrix Eigenvalues & Eigenvectors', 'Understand Partial Derivatives & Gradient Vectors', 'Ace Multivariable Calculus Final Exam'],
+     ARRAY['Gram-Schmidt orthogonalization algorithm', 'Lagrange multiplier constraint setup']),
+
+    (student10_id, tutor1_id, 'Chloe Dubois', 'AP Macroeconomics & Finance', 'Grade 12 / AP Level',
+     ARRAY['Master Aggregate Demand/Supply Curves & Fiscal Policy', 'Score 5 on AP Macroeconomics Exam'],
+     ARRAY['Money multiplier calculations', 'Foreign exchange market equilibrium shifts']),
+
+  -- Tutor 2 (Prof. David Vance) owns Maria, Peter, Emma, Zack, Aria
     (student4_id, tutor2_id, 'Maria Garcia', 'AP Physics C', 'Grade 12',
      ARRAY['Master Rotational Mechanics', 'Prepare for Physics Olympiad'],
      ARRAY['Angular momentum conservation', 'Torque calculations']),
@@ -119,8 +135,17 @@ BEGIN
 
     (student8_id, tutor2_id, 'Emma Watson', 'Organic Chemistry & Biochemistry', 'Pre-Med / College Prep',
      ARRAY['Master Reaction Mechanisms (SN1 vs SN2)', 'Understand Enzyme Catalysis & Kinetics'],
-     ARRAY['Stereochemistry & R/S configuration assignments', 'Nucleophilic substitution arrow pushing'])
+     ARRAY['Stereochemistry & R/S configuration assignments', 'Nucleophilic substitution arrow pushing']),
+
+    (student11_id, tutor2_id, 'Zack Snyder', 'AP Microeconomics & Game Theory', 'Grade 11 / AP Level',
+     ARRAY['Master Nash Equilibrium & Payoff Matrices', 'Understand Monopoly vs Oligopoly Market Structures'],
+     ARRAY['Marginal revenue product calculations', 'Deadweight loss calculation in price ceilings']),
+
+    (student12_id, tutor2_id, 'Aria Tanaka', 'Genetics & Molecular Biology', 'Grade 11 / AP Biology',
+     ARRAY['Master DNA Replication & CRISPR Gene Editing', 'Score 780+ on SAT Biology E/M Test'],
+     ARRAY['Pedigree chart probability calculations', 'Lac operon gene regulation mechanisms'])
   ON CONFLICT (id) DO UPDATE SET tutor_id = EXCLUDED.tutor_id, name = EXCLUDED.name;
 
 END $$;
+
 
