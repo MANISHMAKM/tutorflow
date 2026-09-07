@@ -46,10 +46,6 @@ export async function GET() {
       }
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ sessions: dbSessions });
-    }
-
     const existingIds = new Set(dbSessions.map(s => s.id));
     let fallback = MOCK_SESSIONS;
     if (authUser.role === 'student') {

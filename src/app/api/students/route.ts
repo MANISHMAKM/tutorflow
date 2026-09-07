@@ -32,10 +32,6 @@ export async function GET() {
       }
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ students: dbStudents });
-    }
-
     const dbIds = new Set(dbStudents.map(s => s.id));
     const fallback = MOCK_STUDENTS_LIST.filter(s => isSameTutor(tutor, s.tutor_id) && !dbIds.has(s.id));
     
