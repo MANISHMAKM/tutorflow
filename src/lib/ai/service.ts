@@ -160,7 +160,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
       return `${pq.question} (Solution: ${pq.solution})`;
     });
 
-    console.log(`[AI SERVICE LOG] generatePreSessionPlan success for student=${student.name}`);
+    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for pre-session plan');
 
     return {
       objectives: parsed.data.objectives,
@@ -168,7 +168,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
       practice_questions: formattedQuestions,
     };
   } catch (err: unknown) {
-    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual generator:', err);
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for pre-session plan:', err);
     const primaryWeakness = student.weak_areas?.[0] || 'core mechanics';
     const primaryGoal = student.learning_goals?.[0] || 'exam preparation';
     return {
@@ -205,6 +205,7 @@ export async function generatePostSessionDebrief(
   const openai = getOpenAIClient();
 
   if (!openai) {
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for post-session debrief (No OpenAI Client)');
     const primaryWeakness = student.weak_areas?.[0] || 'target focus topic';
     const summaryText = rawNotes && rawNotes.trim().length > 10
       ? `In this session on "${topic}", ${student.name} covered key problem-solving techniques. Tutor session notes: ${rawNotes.slice(0, 160)}.`
@@ -276,7 +277,7 @@ Return ONLY a valid JSON object with the exact format:
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
-    console.log(`[AI SERVICE LOG] generatePostSessionDebrief success for student=${student.name}`);
+    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for post-session debrief');
 
     return {
       summary: parsed.data.summary,
@@ -284,7 +285,7 @@ Return ONLY a valid JSON object with the exact format:
       next_focus: parsed.data.next_focus,
     };
   } catch (err: unknown) {
-    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual debrief generator:', err);
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for post-session debrief:', err);
     const primaryWeakness = student.weak_areas?.[0] || 'target focus topic';
     const summaryText = rawNotes && rawNotes.trim().length > 10
       ? `In this session on "${topic}", ${student.name} covered key problem-solving techniques. Tutor session notes: ${rawNotes.slice(0, 160)}.`
@@ -319,6 +320,7 @@ export async function generateStudentProgressSummary(
   const openai = getOpenAIClient();
 
   if (!openai) {
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for student progress summary (No OpenAI Client)');
     return {
       summary: `${student.name} has demonstrated steady learning velocity in ${student.subject} across recent sessions. Performance reflects growing problem-solving confidence with consistent effort on assigned homework tasks.`,
       key_improvements: [
@@ -383,11 +385,11 @@ Return ONLY a valid JSON object with the format:
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
-    console.log(`[AI SERVICE LOG] generateStudentProgressSummary success for student=${student.name}`);
+    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for student progress summary');
 
     return parsed.data;
   } catch (err: unknown) {
-    console.warn('[AI SERVICE LOG] OpenAI API call failed or timed out, falling back to contextual progress generator:', err);
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for student progress summary:', err);
     return {
       summary: `${student.name} has demonstrated steady learning velocity in ${student.subject} across recent sessions. Performance reflects growing problem-solving confidence with consistent effort on assigned homework tasks.`,
       key_improvements: [
@@ -402,6 +404,7 @@ Return ONLY a valid JSON object with the format:
     };
   }
 }
+
 
 
 
