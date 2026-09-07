@@ -2,7 +2,7 @@
 
 **TutorFlow** is a full-stack MVP session management platform for 1-on-1 online tutors and students. Built with **Next.js 16 (App Router)**, **Supabase (PostgreSQL & Auth)**, **Resend SDK**, and **OpenAI API (`gpt-4o-mini`)**, TutorFlow features strict server-side state machine enforcement, double-booking overlap prevention, 1.5s debounced notes autosaving, scoped homework permissions, multi-tutor data isolation, and 3 contextual AI touchpoints with Zod-validated JSON outputs.
 
-- **Live Production URL:** [https://tutorflow-rosy.vercel.app](https://tutorflow-rosy.vercel.app)
+- **Live Production URL:** [https://tutorflow-theta.vercel.app](https://tutorflow-theta.vercel.app)
 - **GitHub Repository:** [https://github.com/MANISHMAKM/tutorflow.git](https://github.com/MANISHMAKM/tutorflow.git)
 
 ---
