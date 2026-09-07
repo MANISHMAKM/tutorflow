@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 import { Debrief, SessionPlan, StudentProfile, ProgressSummaryResult } from '@/types';
 
@@ -35,13 +35,13 @@ export const ProgressSummarySchema = z.object({
   recommended_strategy: z.string(),
 });
 
-// Helper to get initialized OpenAI client if key is set
-function getOpenAIClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || apiKey.startsWith('dummy') || apiKey.includes('your-openai') || apiKey.includes('placeholder')) {
+// Helper to get initialized Gemini client if key is set
+function getGeminiClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey.startsWith('dummy') || apiKey.includes('your-gemini') || apiKey.includes('placeholder')) {
     return null;
   }
-  return new OpenAI({ apiKey });
+  return new GoogleGenAI({ apiKey });
 }
 
 // Helper to safely clean markdown codeblocks and parse JSON output defensively
@@ -55,6 +55,34 @@ function cleanAndParseJSON<T>(content: string): T | null {
   }
 }
 
+// Robust Gemini API caller with automatic retry for transient 503 capacity spikes & 429 rate limits
+async function callGeminiWithRetry(gemini: GoogleGenAI, prompt: string, retries = 4): Promise<string> {
+  let lastErr: unknown;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await gemini.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.7,
+        },
+      });
+      const text = response.text;
+      if (text) return text;
+    } catch (err: any) {
+      lastErr = err;
+      const is429 = err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED') || err?.message?.includes('429');
+      const waitTime = is429 ? 15000 : 1500 * (i + 1);
+      console.log(`[AI SERVICE LOG] Gemini API attempt ${i + 1} failed (${err?.status || err?.message || 'unknown error'}). Retrying in ${waitTime / 1000}s...`);
+      if (i < retries - 1) {
+        await new Promise(r => setTimeout(r, waitTime));
+      }
+    }
+  }
+  throw lastErr || new Error('Gemini API request failed after retries.');
+}
+
 /**
  * Touchpoint 1: Pre-Session Lesson Plan Generation
  * Context: Student profile (subject, level, goals, weak areas) + past session history
@@ -65,9 +93,10 @@ export async function generatePreSessionPlan(
   topic: string,
   pastDebriefs: Debrief[] = []
 ): Promise<Omit<SessionPlan, 'session_id'>> {
-  const openai = getOpenAIClient();
+  const gemini = getGeminiClient();
 
-  if (!openai) {
+  if (!gemini) {
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for pre-session plan (No Gemini Client)');
     const primaryWeakness = student.weak_areas?.[0] || 'core mechanics';
     const primaryGoal = student.learning_goals?.[0] || 'exam preparation';
     return {
@@ -132,20 +161,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
 
   try {
     console.log(`[AI SERVICE LOG] generatePreSessionPlan start for student=${student.name}, topic=${topic}`);
-    const response = await openai.chat.completions.create(
-      {
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      },
-      { timeout: 25000 }
-    );
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('OpenAI returned an empty response.');
-    }
+    const content = await callGeminiWithRetry(gemini, prompt);
 
     const rawParsed = cleanAndParseJSON<unknown>(content);
     const parsed = PreSessionPlanSchema.safeParse(rawParsed);
@@ -160,7 +176,7 @@ Return ONLY a valid JSON object with the following exact keys and structure:
       return `${pq.question} (Solution: ${pq.solution})`;
     });
 
-    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for pre-session plan');
+    console.log('[AI EXECUTION LOG] REAL GEMINI RESPONSE USED for pre-session plan');
 
     return {
       objectives: parsed.data.objectives,
@@ -202,10 +218,10 @@ export async function generatePostSessionDebrief(
   topic: string,
   rawNotes: string
 ): Promise<Omit<Debrief, 'session_id'>> {
-  const openai = getOpenAIClient();
+  const gemini = getGeminiClient();
 
-  if (!openai) {
-    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for post-session debrief (No OpenAI Client)');
+  if (!gemini) {
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for post-session debrief (No Gemini Client)');
     const primaryWeakness = student.weak_areas?.[0] || 'target focus topic';
     const summaryText = rawNotes && rawNotes.trim().length > 10
       ? `In this session on "${topic}", ${student.name} covered key problem-solving techniques. Tutor session notes: ${rawNotes.slice(0, 160)}.`
@@ -254,20 +270,7 @@ Return ONLY a valid JSON object with the exact format:
 
   try {
     console.log(`[AI SERVICE LOG] generatePostSessionDebrief start for student=${student.name}, topic=${topic}`);
-    const response = await openai.chat.completions.create(
-      {
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      },
-      { timeout: 25000 }
-    );
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('OpenAI returned an empty response.');
-    }
+    const content = await callGeminiWithRetry(gemini, prompt);
 
     const rawParsed = cleanAndParseJSON<unknown>(content);
     const parsed = PostSessionDebriefSchema.safeParse(rawParsed);
@@ -277,7 +280,7 @@ Return ONLY a valid JSON object with the exact format:
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
-    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for post-session debrief');
+    console.log('[AI EXECUTION LOG] REAL GEMINI RESPONSE USED for post-session debrief');
 
     return {
       summary: parsed.data.summary,
@@ -317,10 +320,10 @@ export async function generateStudentProgressSummary(
   student: StudentProfile,
   pastDebriefs: Debrief[]
 ): Promise<ProgressSummaryResult> {
-  const openai = getOpenAIClient();
+  const gemini = getGeminiClient();
 
-  if (!openai) {
-    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for student progress summary (No OpenAI Client)');
+  if (!gemini) {
+    console.log('[AI EXECUTION LOG] FALLBACK TEMPLATE USED for student progress summary (No Gemini Client)');
     return {
       summary: `${student.name} has demonstrated steady learning velocity in ${student.subject} across recent sessions. Performance reflects growing problem-solving confidence with consistent effort on assigned homework tasks.`,
       key_improvements: [
@@ -362,20 +365,7 @@ Return ONLY a valid JSON object with the format:
 
   try {
     console.log(`[AI SERVICE LOG] generateStudentProgressSummary start for student=${student.name}`);
-    const response = await openai.chat.completions.create(
-      {
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      },
-      { timeout: 25000 }
-    );
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('OpenAI returned an empty response.');
-    }
+    const content = await callGeminiWithRetry(gemini, prompt);
 
     const rawParsed = cleanAndParseJSON<unknown>(content);
     const parsed = ProgressSummarySchema.safeParse(rawParsed);
@@ -385,7 +375,7 @@ Return ONLY a valid JSON object with the format:
       throw new Error(`AI response failed schema validation: ${parsed.error.issues.map(i => i.message).join(', ')}`);
     }
 
-    console.log('[AI EXECUTION LOG] REAL OPENAI RESPONSE USED for student progress summary');
+    console.log('[AI EXECUTION LOG] REAL GEMINI RESPONSE USED for student progress summary');
 
     return parsed.data;
   } catch (err: unknown) {
@@ -404,8 +394,3 @@ Return ONLY a valid JSON object with the format:
     };
   }
 }
-
-
-
-
-

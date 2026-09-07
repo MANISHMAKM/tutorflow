@@ -1,6 +1,6 @@
 # TutorFlow — 1-on-1 Online Tutoring Platform
 
-**TutorFlow** is a full-stack MVP session management platform for 1-on-1 online tutors and students. Built with **Next.js 16 (App Router)**, **Supabase (PostgreSQL & Auth)**, **Resend SDK**, and **OpenAI API (`gpt-4o-mini`)**, TutorFlow features strict server-side state machine enforcement, double-booking overlap prevention, 1.5s debounced notes autosaving, scoped homework permissions, multi-tutor data isolation, and 3 contextual AI touchpoints with Zod-validated JSON outputs.
+**TutorFlow** is a full-stack MVP session management platform for 1-on-1 online tutors and students. Built with **Next.js 16 (App Router)**, **Supabase (PostgreSQL & Auth)**, **Resend SDK**, and **Google Gemini API (`gemini-1.5-flash`)**, TutorFlow features strict server-side state machine enforcement, double-booking overlap prevention, 1.5s debounced notes autosaving, scoped homework permissions, multi-tutor data isolation, and 3 contextual AI touchpoints with Zod-validated JSON outputs.
 
 - **Live Production URL:** [https://tutorflow-theta.vercel.app](https://tutorflow-theta.vercel.app)
 - **GitHub Repository:** [https://github.com/MANISHMAKM/tutorflow.git](https://github.com/MANISHMAKM/tutorflow.git)
@@ -26,7 +26,7 @@ The database includes pre-configured accounts with strict server-side role and d
 | :--- | :--- | :--- |
 | **Framework** | **Next.js 16.3** (App Router, React 19) | Server components, route handlers, dynamic pages |
 | **Database & Auth** | **Supabase (PostgreSQL & SSR)** | User authentication, RLS security policies, PL/pgSQL triggers |
-| **AI Integration** | **OpenAI API (`gpt-4o-mini`)** | Contextual JSON generation for lesson plans, debriefs, and progress reports |
+| **AI Integration** | **Google Gemini API (`gemini-1.5-flash`)** | Contextual JSON generation for lesson plans, debriefs, and progress reports |
 | **Schema Validation** | **Zod (`^4.5.4`)** | Strict runtime validation of AI outputs and API request bodies |
 | **Email Service** | **Resend SDK (`^4.1.2`)** | Transactional email notifications upon session scheduling |
 | **Styling** | **Tailwind CSS v4** + Lucide React | Modern dark mode UI components and state indicators |
@@ -36,7 +36,7 @@ The database includes pre-configured accounts with strict server-side role and d
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-OPENAI_API_KEY=your-openai-api-key
+GEMINI_API_KEY=your-gemini-api-key
 RESEND_API_KEY=your-resend-api-key
 ```
 
@@ -99,7 +99,7 @@ The lifecycle strictly follows a linear 4-stage sequence:
 
 ## 🤖 5. AI Prompt Strategy & Contextual Rationale
 
-All AI touchpoints in [`src/lib/ai/service.ts`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/lib/ai/service.ts) use real student profile data rather than generic prompts:
+All AI touchpoints in [`src/lib/ai/service.ts`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/lib/ai/service.ts) use Google Gemini API (`gemini-1.5-flash`) with real student profile data rather than generic prompts:
 
 ### Why AI is Contextual Rather Than Generic
 Generic LLM prompts produce repetitive, one-size-fits-all lesson plans and summaries. By injecting student `subject`, `current_level`, `learning_goals`, `weak_areas`, and previous session history into the system prompt context, the AI functions as a true personalized pedagogical assistant.
@@ -109,7 +109,7 @@ Generic LLM prompts produce repetitive, one-size-fits-all lesson plans and summa
 3. **AI Progress Summary (`POST /api/ai/progress`)**: Evaluates learning velocity across all historical debriefs. Uses set-based batch querying (`.in('session_id', sessionIds)`) to eliminate $N+1$ query performance degradation.
 
 ### Failure & Resilience Handling
-If `OPENAI_API_KEY` is unconfigured, rate-limited (429), timed out (503), or produces schema validation errors, the service throws an explicit error response. The frontend modals ([`AIPlanModal.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIPlanModal.tsx), [`AIDebriefCard.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIDebriefCard.tsx), [`AIProgressModal.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIProgressModal.tsx)) display a visible error banner with a **Retry Generation** button.
+If `GEMINI_API_KEY` is unconfigured, rate-limited, timed out, or produces schema validation errors, the service logs the exception and returns a deterministic, high-quality fallback template. The frontend modals ([`AIPlanModal.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIPlanModal.tsx), [`AIDebriefCard.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIDebriefCard.tsx), [`AIProgressModal.tsx`](file:///c:/Users/manis/OneDrive/Desktop/finquo/src/components/AIProgressModal.tsx)) receive structured data seamlessly.
 
 ---
 
