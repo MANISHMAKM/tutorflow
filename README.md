@@ -13,9 +13,10 @@ The database includes pre-configured accounts with strict server-side role and d
 
 | Role | Name | Email | Password | Assigned Students & Isolation Scope |
 | :--- | :--- | :--- | :--- | :--- |
-| **Tutor 1 (Sarah)** | Dr. Sarah Jenkins | `tutor@tutorflow.com` | `TutorPass123!` | Manages **Alex Johnson**, **Rahul Sharma**, and **Anu Patel**. Isolated from Tutor 2's roster. |
-| **Tutor 2 (David)** | Prof. David Vance | `david@tutorflow.com` | `TutorPass123!` | Manages **Maria Garcia** and **Peter Parker**. Isolated from Tutor 1's roster. |
+| **Tutor 1 (Sarah)** | Dr. Sarah Jenkins | `tutor@tutorflow.com` | `TutorPass123!` | Manages **Alex Johnson**, **Rahul Sharma**, **Anu Patel**, **Sophia Chen** (AP CS), and **Marcus Vance** (IB Physics HL). Isolated from Tutor 2's roster. |
+| **Tutor 2 (David)** | Prof. David Vance | `david@tutorflow.com` | `TutorPass123!` | Manages **Maria Garcia**, **Peter Parker**, and **Emma Watson** (Organic Chemistry). Isolated from Tutor 1's roster. |
 | **Student (Alex)** | Alex Johnson | `student@tutorflow.com` | `Student123!` | Student Portal for **Alex Johnson** (assigned to Tutor 1). Accesses only own sessions, notes, debriefs, and homework. |
+
 
 ---
 

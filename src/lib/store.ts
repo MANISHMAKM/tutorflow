@@ -107,13 +107,84 @@ export const MOCK_STUDENT_PETER: StudentProfile = {
   },
 };
 
+export const MOCK_STUDENT_SOPHIA: StudentProfile = {
+  id: 'student-6',
+  tutor_id: 'tutor-1',
+  name: 'Sophia Chen',
+  subject: 'Computer Science & Algorithms',
+  current_level: 'Grade 11 / AP CS A',
+  learning_goals: [
+    'Master Dynamic Programming & Recursion',
+    'Build Object-Oriented System Designs',
+    'Score 5 on AP Computer Science A Exam',
+  ],
+  weak_areas: [
+    'Recursive call stack tracing',
+    'Interface vs Abstract class inheritance',
+    'Time complexity analysis (Big-O notation)',
+  ],
+  user: {
+    id: 'student-6',
+    role: 'student',
+    name: 'Sophia Chen',
+    email: 'sophia@tutorflow.com',
+  },
+};
+
+export const MOCK_STUDENT_MARCUS: StudentProfile = {
+  id: 'student-7',
+  tutor_id: 'tutor-1',
+  name: 'Marcus Vance',
+  subject: 'IB Physics HL',
+  current_level: 'Grade 12 / IB HL',
+  learning_goals: [
+    'Master Electromagnetic Induction & Maxwell Equations',
+    'Achieve Grade 7 on IB Physics HL Portfolio',
+  ],
+  weak_areas: [
+    'Lenz Law directional vector determination',
+    'Quantum wave-particle duality equations',
+  ],
+  user: {
+    id: 'student-7',
+    role: 'student',
+    name: 'Marcus Vance',
+    email: 'marcus@tutorflow.com',
+  },
+};
+
+export const MOCK_STUDENT_EMMA: StudentProfile = {
+  id: 'student-8',
+  tutor_id: 'tutor-2',
+  name: 'Emma Watson',
+  subject: 'Organic Chemistry & Biochemistry',
+  current_level: 'Pre-Med / College Prep',
+  learning_goals: [
+    'Master Reaction Mechanisms (SN1 vs SN2)',
+    'Understand Enzyme Catalysis & Kinetics',
+  ],
+  weak_areas: [
+    'Stereochemistry & R/S configuration assignments',
+    'Nucleophilic substitution arrow pushing',
+  ],
+  user: {
+    id: 'student-8',
+    role: 'student',
+    name: 'Emma Watson',
+    email: 'emma@tutorflow.com',
+  },
+};
+
 // Combined Student Store
 export const MOCK_STUDENTS_LIST: StudentProfile[] = [
   MOCK_STUDENT,
   MOCK_STUDENT_RAHUL,
   MOCK_STUDENT_ANU,
+  MOCK_STUDENT_SOPHIA,
+  MOCK_STUDENT_MARCUS,
   MOCK_STUDENT_MARIA,
   MOCK_STUDENT_PETER,
+  MOCK_STUDENT_EMMA,
 ];
 
 export const MOCK_SESSIONS: Session[] = [
@@ -151,6 +222,39 @@ export const MOCK_SESSIONS: Session[] = [
     student: MOCK_STUDENT,
   },
   {
+    id: 'session-104',
+    tutor_id: 'tutor-1',
+    student_id: 'student-6',
+    scheduled_at: new Date(Date.now() + 86400000 * 1).toISOString(),
+    duration_minutes: 60,
+    topic: 'Recursion, Call Stack Tracing & Binary Tree Traversal',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/cs-tree-call',
+    student: MOCK_STUDENT_SOPHIA,
+  },
+  {
+    id: 'session-105',
+    tutor_id: 'tutor-1',
+    student_id: 'student-6',
+    scheduled_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    duration_minutes: 60,
+    topic: 'Object-Oriented Inheritance & Polymorphism in Java',
+    status: 'ai_reviewed',
+    meeting_link: 'https://meet.google.com/cs-oop-java',
+    student: MOCK_STUDENT_SOPHIA,
+  },
+  {
+    id: 'session-106',
+    tutor_id: 'tutor-1',
+    student_id: 'student-7',
+    scheduled_at: new Date(Date.now() + 86400000 * 3).toISOString(),
+    duration_minutes: 60,
+    topic: 'Electromagnetic Induction & Faraday-Lenz Law Vectors',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/phys-em-ind',
+    student: MOCK_STUDENT_MARCUS,
+  },
+  {
     id: 'session-201',
     tutor_id: 'tutor-2',
     student_id: 'student-4',
@@ -160,6 +264,17 @@ export const MOCK_SESSIONS: Session[] = [
     status: 'scheduled',
     meeting_link: 'https://meet.google.com/xyz-uvwx-rst',
     student: MOCK_STUDENT_MARIA,
+  },
+  {
+    id: 'session-202',
+    tutor_id: 'tutor-2',
+    student_id: 'student-8',
+    scheduled_at: new Date(Date.now() + 86400000 * 2).toISOString(),
+    duration_minutes: 60,
+    topic: 'Nucleophilic Substitution Mechanisms (SN1 vs SN2 Kinetics)',
+    status: 'scheduled',
+    meeting_link: 'https://meet.google.com/chem-sn1-sn2',
+    student: MOCK_STUDENT_EMMA,
   },
 ];
 
@@ -174,6 +289,11 @@ export const MOCK_NOTES: Record<string, SessionNotes> = {
     content: `Introduced 1D kinematics equations (v = u + at, s = ut + 0.5at^2). Analyzed velocity-time graphs. Alex excelled at slope calculation but required guidance setting up acceleration equations.`,
     updated_at: new Date(Date.now() - 86400000 * 4).toISOString(),
   },
+  'session-105': {
+    session_id: 'session-105',
+    content: `Reviewed abstract classes vs interfaces in Java. Sophia built a clean animal hierarchy example. Handled method overriding correctly, but needed clarification on default interface methods.`,
+    updated_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
 };
 
 export const MOCK_DEBRIEFS: Record<string, Debrief> = {
@@ -185,6 +305,15 @@ export const MOCK_DEBRIEFS: Record<string, Debrief> = {
       { task: 'Graphing Challenge', description: 'Sketch position vs time graph from given velocity profile.' },
     ],
     next_focus: '2D Projectile Motion & Vector Resolution',
+  },
+  'session-105': {
+    session_id: 'session-105',
+    summary: 'Sophia mastered the core differences between interface implementation and abstract class extension. Demonstrates strong OOP architecture skills.',
+    homework: [
+      { task: 'Java OOP Design Challenge', description: 'Design a PaymentProcessor interface with CreditCard and PayPal implementations.' },
+      { task: 'Tracing Exercise', description: 'Trace polymorphism behavior in nested subclass arrays.' },
+    ],
+    next_focus: 'Recursion Base Cases & Dynamic Memory Allocation',
   },
 };
 
@@ -208,6 +337,25 @@ export const MOCK_PLANS: Record<string, SessionPlan> = {
       'A company model shows Profit P(x) = -5x^2 + 200x - 1000. Find production quantity x for max profit.',
     ],
   },
+  'session-104': {
+    session_id: 'session-104',
+    objectives: [
+      'Understand recursive call stack execution and stack frame allocation.',
+      'Implement binary tree pre-order, in-order, and post-order traversals.',
+      'Identify and avoid infinite recursion base case bugs.',
+    ],
+    lesson_outline: [
+      '1. Call Stack Warm-up (10 min): Visualizing factorial(5) execution stack.',
+      '2. Binary Tree Setup (15 min): Node structure and recursive subtree traversal logic.',
+      '3. Live Coding (25 min): Implementing in-order traversal and calculating tree depth.',
+      '4. Exit Ticket (10 min): Tracing a complex recursive tree print method.',
+    ],
+    practice_questions: [
+      'Write a recursive function in Java to find the height of a binary tree given root Node.',
+      'Trace the exact call stack order for inOrderTraversal on a 5-node balanced binary search tree.',
+      'Convert a recursive Fibonacci implementation into a memoized top-down dynamic programming function.',
+    ],
+  },
 };
 
 export const MOCK_HOMEWORK: StudentHomeworkItem[] = [
@@ -225,4 +373,19 @@ export const MOCK_HOMEWORK: StudentHomeworkItem[] = [
     task: 'Sketch position vs time graph from given velocity profile',
     completed: false,
   },
+  {
+    id: 'hw-3',
+    student_id: 'student-6',
+    session_id: 'session-105',
+    task: 'Design a PaymentProcessor interface with CreditCard and PayPal implementations',
+    completed: false,
+  },
+  {
+    id: 'hw-4',
+    student_id: 'student-6',
+    session_id: 'session-105',
+    task: 'Trace polymorphism behavior in nested subclass arrays',
+    completed: true,
+  },
 ];
+
